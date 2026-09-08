@@ -97,7 +97,7 @@
       <div class="kick">Plain-Language Edition</div>
       <h1>SOP Runbooks — explained simply</h1>
       <p>Every term explained. Nothing assumed. Tap one.</p>
-      <div class="ver">v1.2 &nbsp;·&nbsp; Basics + 16 + bonus</div>
+      <div class="ver">v1.5 &nbsp;·&nbsp; Basics + 16 + bonuses</div>
     </div>
     <nav id="nav">
       <div class="navsec">Read first</div>
@@ -120,7 +120,10 @@
       <button class="navbtn" data-p="p15"><span class="n">15</span>Let Windows/AD users log in</button>
       <button class="navbtn" data-p="p16"><span class="n">16</span>Kubernetes: run an app in pods</button>
       <div class="navsec">Extra</div>
+      <button class="navbtn" data-p="pstig"><span class="n">＋</span>Build a STIG'd RHEL 9 box (installer)</button>
       <button class="navbtn" data-p="pfs"><span class="n">＋</span>Add a disk &amp; make it stick (fstab)</button>
+      <button class="navbtn" data-p="pdock"><span class="n">＋</span>Container fix-it (Docker Q&amp;A)</button>
+      <button class="navbtn" data-p="ptar"><span class="n">＋</span>Zip &amp; unzip files (tarballs)</button>
     </nav>
   </aside>
 
@@ -549,6 +552,26 @@ chown -R <span class="ph">jdoe</span>:<span class="ph">jdoe</span> /home/<span c
         </div>
       </div>
 
+      <h3 class="phase">How "wheel" gives boss powers (and giving just one person)</h3>
+      <div class="define"><span class="lbl4">The idea</span>Being in the <b>wheel</b> group gives boss powers because of ONE line in a settings file (<code class="k">/etc/sudoers</code>) that says "everyone in wheel is allowed." The <b>group is the guest list</b>; that <b>line is the rule</b> that lets the list in.</div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">See the rule</div>
+          <div class="cmd"><button class="copy">Copy</button>grep wheel /etc/sudoers</div>
+          <div class="out"><span class="lbl2">The one line that matters</span>%wheel  ALL=(ALL)  ALL
+   ↑ the "%" means the GROUP wheel; the rest means "can run anything"</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Give boss powers to ONE person (without the group)</div>
+          <p>Make a little rule file just for them. Always open it with <code class="k">visudo</code> — it checks your typing, so a mistake can't lock everyone out:</p>
+          <div class="cmd"><button class="copy">Copy</button>visudo -f /etc/sudoers.d/<span class="ph">jdoe</span></div>
+          <p>Put one line inside it:</p>
+          <div class="cmd"><button class="copy">Copy</button><span class="ph">jdoe</span>  ALL=(ALL)  ALL     <span class="c"># this person can now use sudo</span></div>
+          <div class="did"><span class="lbl5">Check it</span><code class="k">sudo -l -U <span class="ph">jdoe</span></code> shows exactly what they're allowed to do.</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ Little gotcha</p><p>Name the file plainly (<code class="k">jdoe</code>) — Linux <b>ignores</b> rule files whose name has a dot or ends in <code class="k">~</code>. That's a common "why isn't it working?" surprise.</p></div>
+
       <h3 class="phase">Turn off or delete an account</h3>
       <div class="call amber"><p class="h">◆ Turn off first, delete later</p><p>Turning off is like <b>deactivating a key card</b> — reversible, and it keeps a record. Deleting is permanent. Most places turn off and keep the account for a while before deleting.</p></div>
       <div class="run">
@@ -912,6 +935,25 @@ klist         <span class="c"># shows the ticket</span></div>
           <div class="did"><span class="lbl5">Now…</span><code class="k">ssh <span class="ph">ian</span>@<span class="ph">any-joined-machine</span></code> works with their key, everywhere, with nothing to set up on each box.</div>
         </div>
       </div>
+
+      <h3 class="phase">Giving admin now — the central way (not one box at a time)</h3>
+      <div class="define"><span class="lbl4">What changes now</span>Before IDM, you gave someone boss powers on ONE machine at a time (the wheel group, Runbook 04). Now that IDM is the central desk, you give it <b>once at the desk</b> and it works on <b>every</b> joined machine. The one-machine way is now just the backup for when IDM is down.</div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Put the admins in a group at the desk</div>
+          <div class="cmd"><button class="copy">Copy</button>ipa group-add <span class="ph">admins</span>
+ipa group-add-member <span class="ph">admins</span> --users=<span class="ph">jdoe</span></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Make one rule: "this group gets boss powers"</div>
+          <div class="cmd"><button class="copy">Copy</button>ipa sudorule-add <span class="ph">admins-sudo</span>
+ipa sudorule-add-user <span class="ph">admins-sudo</span> --groups=<span class="ph">admins</span>
+ipa sudorule-add-host <span class="ph">admins-sudo</span> --hostcat=all
+ipa sudorule-mod  <span class="ph">admins-sudo</span> --cmdcat=all</div>
+          <div class="did"><span class="lbl5">Now…</span>anyone you add to the <b>admins</b> group has boss powers on every joined machine. Remove them from the group and it's gone everywhere — you never touch the machines.</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ One door vs the whole building</p><p>The wheel group (Runbook 04) is a lock on <b>one</b> door. An IDM rule is a master key for the <b>whole building</b>. With IDM in charge, use the IDM rule.</p></div>
     </section>
 
     <!-- SOP 15 -->
@@ -1221,10 +1263,18 @@ curl http://<span class="ph">10.1.1.61</span>:<span class="ph">31782</span>   <s
       <div class="define"><span class="lbl4">The words</span><b>Format</b> = put a filesystem on a blank disk so it can hold files (like laying a floor). <b>Mount</b> = make the disk show up as a folder you can use. <b>/etc/fstab</b> = the machine's "building map" that lists which disks mount to which folders at startup.</div>
 
       <div class="run">
+        <div class="rstep" data-n="0">
+          <div class="rtitle">First, give the VM a new disk in vSphere</div>
+          <p>If the disk isn't there yet, add it from vSphere (the space comes from the shared <b>datastore</b>):</p>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">In vCenter</span>Right-click the VM → <b>Edit Settings</b> → <b>Add New Device</b> → <b>Hard Disk</b> → set the size → <b>OK</b>. (Make sure the datastore has room.)</div></div>
+          <p>The VM now <em>has</em> the disk, but Linux won't see it until you tell it to look — that's the very next step.</p>
+        </div>
         <div class="rstep" data-n="1">
           <div class="rtitle">Find the new disk and put a "floor" in it</div>
           <p>Become the boss. List the disks to find the new empty one (it has no mount folder yet), then format it:</p>
-          <div class="cmd"><button class="copy">Copy</button>lsblk                    <span class="c"># find the new disk, e.g. sdb</span>
+          <div class="cmd"><button class="copy">Copy</button><span class="c"># make Linux notice the disk vSphere just added:</span>
+for h in /sys/class/scsi_host/host*/scan; do echo "- - -" > "$h"; done
+lsblk                    <span class="c"># find the new disk, e.g. sdb</span>
 mkfs.xfs /dev/<span class="ph">sdb1</span>       <span class="c"># put a filesystem on it (XFS is the RHEL default)</span></div>
           <div class="call red"><p class="h">✕ Formatting erases everything</p><p>Only format a truly <b>new, empty</b> disk — it wipes anything on it. Check the name with <code class="k">lsblk</code> twice before you format.</p></div>
         </div>
@@ -1252,6 +1302,223 @@ findmnt /<span class="ph">data</span>     <span class="c"># confirms it's mounte
         </div>
       </div>
       <div class="call amber"><p class="h">◆ If a bad fstab already froze a boot</p><p>At the emergency screen: log in, type <code class="k">mount -o remount,rw /</code> (makes the system editable), fix or delete the bad line in <code class="k">/etc/fstab</code>, then <code class="k">reboot</code>. That's the way back.</p></div>
+    </section>
+
+    <!-- BONUS: DOCKER TROUBLESHOOTING -->
+    <section class="panel" id="pdock">
+      <p class="eyebrow">＋ Bonus · plain-language</p>
+      <h2 class="title">Container Fix-It: "What's Wrong With My Container?"</h2>
+      <p class="lead">The everyday "my container is misbehaving" problems, and the simple fixes. These use <b>Docker</b> (the most common tool for running a single container by hand). The <em>same ideas</em> apply to Kubernetes pods — where it helps, there's an "In Kubernetes" note.</p>
+      <div class="define"><span class="lbl4">Quick reminder</span>A <b>container</b> is one running copy of an app — a "lunchbox" that's open and running. An <b>image</b> is the recipe/lunchbox it was made from. <b>Docker</b> runs one container at a time by hand; <b>Kubernetes</b> is the manager that runs lots of them for you.</div>
+
+      <div class="qa"><p class="q">1 · A container starts, then immediately quits. How do I find out why?</p>
+      <p class="a">It tried to run, hit a problem, and gave up. To find out why, look at what it said and how it exited. Work down this list — the first one usually tells you.</p></div>
+      <div class="cmd"><button class="copy">Copy</button>docker logs <span class="ph">&lt;container_id&gt;</span>       <span class="c"># its last words — the error is usually here</span>
+docker ps -a                    <span class="c"># its status + exit code (-a shows stopped ones too)</span>
+docker inspect <span class="ph">&lt;container_id&gt;</span>    <span class="c"># all its settings and details</span>
+docker run -it --entrypoint /bin/sh <span class="ph">&lt;image_name&gt;</span>   <span class="c"># go INSIDE and poke around by hand</span></div>
+      <div class="define"><span class="lbl4">In Kubernetes</span>Same idea: <code class="k">kubectl logs <span class="ph">&lt;pod&gt;</span></code> for its last words, and <code class="k">kubectl describe pod <span class="ph">&lt;pod&gt;</span></code> for why it won't start.</div>
+
+      <div class="qa"><p class="q">2 · My app in a container can't reach the database on the host machine. Why?</p>
+      <p class="a">Inside a container, <b>"localhost" means the container itself</b> — not the computer it's running on. So when your app looks for the database at "localhost," it's searching inside its own little box and finding nothing. To reach the real host machine, use the special name <code class="k">host.docker.internal</code> instead.</p></div>
+      <div class="cmd"><button class="copy">Copy</button><span class="c"># point the app's database setting at the host:</span>
+DB_HOST=host.docker.internal
+<span class="c"># on Linux, also add this when you run the container:</span>
+docker run --add-host=host.docker.internal:host-gateway <span class="ph">&lt;image_name&gt;</span></div>
+
+      <div class="qa"><p class="q">3 · The container is running, but I can't open the app in my browser.</p>
+      <p class="a">The app is up but the door to it isn't open. Check these four things:</p></div>
+      <ul class="plain2">
+        <li>The app must listen on <code class="k">0.0.0.0</code> (all doors), <b>not</b> <code class="k">127.0.0.1</code> (which means "only talk to myself"). If it only listens to itself, no one outside can reach it.</li>
+        <li>Check the port mapping with <code class="k">docker ps</code> — it shows which outside port connects to which inside port.</li>
+        <li>Make sure you <b>published</b> the port when you started it: <code class="k">-p &lt;host_port&gt;:&lt;container_port&gt;</code>.</li>
+        <li>Make sure a <b>firewall</b> (or a cloud "security group") isn't blocking that port.</li>
+      </ul>
+
+      <div class="qa"><p class="q">4 · I need the data to survive even if the container is deleted. How?</p>
+      <p class="a">By default, when you throw a container away, its files go with it. To keep the data, put it in a <b>Volume</b> — a storage box that lives <em>outside</em> the container and sticks around.</p></div>
+      <div class="cmd"><button class="copy">Copy</button>docker volume create <span class="ph">mydata</span>
+docker run -v <span class="ph">mydata</span>:/app/data <span class="ph">&lt;image_name&gt;</span>   <span class="c"># files in /app/data now survive</span></div>
+      <div class="define"><span class="lbl4">In Kubernetes</span>Same idea, called a <b>PersistentVolume</b> — storage that outlives the pod.</div>
+
+      <div class="qa"><p class="q">5 · My image (the app's lunchbox recipe) is huge. How do I shrink it?</p>
+      <p class="a">A big image is slow to move and store. Trim it like this:</p></div>
+      <ul class="plain2">
+        <li>Start from a <b>tiny base</b> (like <code class="k">alpine</code>, a very small Linux).</li>
+        <li>Add a <code class="k">.dockerignore</code> file to leave out junk you don't need.</li>
+        <li>Combine <code class="k">RUN</code> steps so there are fewer layers.</li>
+        <li>Remove leftover packages and cache.</li>
+        <li>Use a <b>multi-stage build</b> — build in a big workshop, then copy only the finished result into a tiny final image:</li>
+      </ul>
+      <div class="cmd"><button class="copy">Copy</button><span class="c"># stage 1: the big workshop that builds the app</span>
+FROM node:18 AS build
+WORKDIR /app
+COPY . .
+RUN npm install &amp;&amp; npm run build
+
+<span class="c"># stage 2: a tiny final image with ONLY the finished files</span>
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80</div>
+
+      <div class="qa"><p class="q">6 · Two containers need to talk to each other. How?</p>
+      <p class="a">Put them on the same <b>private network</b>, and then they can find each other by name — no chasing IP addresses.</p></div>
+      <div class="cmd"><button class="copy">Copy</button>docker network create <span class="ph">mynet</span>
+docker run --network <span class="ph">mynet</span> --name app1 <span class="ph">&lt;image1&gt;</span>
+docker run --network <span class="ph">mynet</span> --name app2 <span class="ph">&lt;image2&gt;</span>
+<span class="c"># now app1 can reach app2 just by using the name "app2"</span></div>
+      <div class="define"><span class="lbl4">In Kubernetes</span>Pods reach each other through a <b>Service</b> by name automatically — same idea, built in.</div>
+
+      <div class="qa"><p class="q">7 · How do I limit how much CPU and memory a container can use?</p>
+      <p class="a">Give it a cap when you start it, so one container can't hog the whole machine:</p></div>
+      <div class="cmd"><button class="copy">Copy</button>docker run -d --cpus="1.0" --memory="512m" <span class="ph">&lt;image_name&gt;</span>   <span class="c"># at most 1 CPU + 512 MB</span></div>
+      <div class="define"><span class="lbl4">In Kubernetes</span>Same idea, set as <b>requests</b> and <b>limits</b> in the pod — exactly like the app file in the Kubernetes tab.</div>
+
+      <div class="did"><span class="lbl5">The pattern behind all of these</span>When a container misbehaves: <b>read its logs first</b>, check <b>where it's listening</b> and <b>which ports are open</b>, remember <b>"localhost" means the container itself</b>, and use <b>volumes</b> so data isn't lost. Those few habits solve most container problems.</div>
+    </section>
+
+    <!-- BONUS: ZIP / TAR -->
+    <section class="panel" id="ptar">
+      <p class="eyebrow">＋ Bonus · plain-language</p>
+      <h2 class="title">Zip &amp; Unzip Files (Tarballs)</h2>
+      <p class="lead">On Windows you right-click a folder and pick <b>"Send to → Compressed (zipped) folder"</b> to squish a bunch of files into one small file. Linux does the exact same thing — you just type it. Here's how, and why you'd bother.</p>
+      <div class="define"><span class="lbl4">Why zip at all? (same reasons as Windows)</span><b>1) Bundle</b> — put many files/folders into ONE file, so it's easy to move, email, or carry across the air gap on a disc. <b>2) Shrink</b> — make it smaller so it takes less space and transfers faster (a text log can shrink 80–90%). Also handy for keeping a backup copy of a folder before you change it.</div>
+
+      <h3 class="phase">The Linux way: tar (the "box")</h3>
+      <div class="define"><span class="lbl4">What "tar" is</span><b>tar</b> packs many files into one file — a "<b>tarball</b>." By itself it just bundles (doesn't shrink). Add the <b>z</b> to also vacuum-seal it. The result is a <code class="k">.tar.gz</code> file — a packed <em>and</em> shrunk box.</div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Zip a folder into one small file</div>
+          <div class="cmd"><button class="copy">Copy</button>tar czf <span class="ph">backup.tar.gz</span> <span class="ph">myfolder</span>    <span class="c"># bundle + shrink 'myfolder' into backup.tar.gz</span></div>
+          <div class="define"><span class="lbl4">The letters, decoded</span><b>c</b> = Create (make one) · <b>z</b> = zip/shrink it · <b>f</b> = the Filename to make. Read it as "<b>c</b>reate a <b>z</b>ipped <b>f</b>ile."</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Peek inside without unpacking</div>
+          <div class="cmd"><button class="copy">Copy</button>tar tzf <span class="ph">backup.tar.gz</span>    <span class="c"># t = lisT what's inside (just looking)</span></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Unzip it (get the files back out)</div>
+          <div class="cmd"><button class="copy">Copy</button>tar xzf <span class="ph">backup.tar.gz</span>    <span class="c"># x = eXtract (unpack it here)</span></div>
+          <div class="did"><span class="lbl5">Remember just three letters</span><b>c</b> = Create · <b>x</b> = eXtract · <b>t</b> = lisT. Keep <b>z</b> (shrink) and <b>f</b> (file) on all of them.</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Other handy ways</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Shrink just ONE file</div>
+          <div class="cmd"><button class="copy">Copy</button>gzip <span class="ph">bigfile.log</span>       <span class="c"># becomes bigfile.log.gz (the original is replaced)</span>
+gunzip <span class="ph">bigfile.log.gz</span>  <span class="c"># turn it back into bigfile.log</span></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Make a Windows-style .zip (to share with Windows folks)</div>
+          <div class="cmd"><button class="copy">Copy</button>zip -r <span class="ph">archive.zip</span> <span class="ph">myfolder</span>   <span class="c"># -r = include everything in the folder</span>
+unzip <span class="ph">archive.zip</span>            <span class="c"># unpack a .zip</span></div>
+          <div class="define"><span class="lbl4">Which one to use?</span>Staying on Linux? Use <b>tar</b> (<code class="k">.tar.gz</code>) — it's the native way. Sending to a Windows person? Use <b>zip</b> — they can open it with a double-click.</div>
+        </div>
+      </div>
+
+      <div class="call amber"><p class="h">◆ A great real use: free up space WITHOUT losing anything</p><p>Disk getting full from old logs? Instead of deleting them, <b>shrink</b> them — <code class="k">gzip</code> a big log and it keeps the data but reclaims most of the space. In a compliance shop where you must keep logs, that's the right move (delete is the last resort).</p></div>
+      <div class="did"><span class="lbl5">You did it when…</span>you can make a <code class="k">.tar.gz</code> from a folder, peek inside it, and unpack it again — and you know to reach for <code class="k">zip</code> when sharing with Windows.</div>
+    </section>
+
+    <!-- BONUS: STIG INSTALL -->
+    <section class="panel" id="pstig">
+      <p class="eyebrow">＋ Bonus · plain-language</p>
+      <h2 class="title">Build a STIG'd RHEL 9 Box (from the Installer)</h2>
+      <p class="lead"><b>"STIG'd"</b> means the box is locked down to the military's security checklist (DISA STIG). A big part of that is set up <b>during the install — before the box even boots.</b> Two things matter most: (1) tell the installer to apply the STIG, and (2) put certain folders on their <b>own separate storage</b>. Here's the whole thing, step by step.</p>
+      <div class="define"><span class="lbl4">The words</span><b>STIG</b> = the DISA security checklist. <b>Security Policy</b> = a screen in the installer where you pick that checklist so it's applied for you. <b>Partition</b> = a separate slice of the disk. Some folders must live on their own slice.</div>
+
+      <h3 class="phase">Start the installer</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Boot the RHEL 9 install disc</div>
+          <p>In vSphere, attach the RHEL 9 ISO to a new VM and power it on (making the VM is Runbook 02). Open the <b>Web Console</b> to watch, pick your language, and you land on the big menu screen — the <b>Installation Summary</b>. This hub is the "tools menu" where you set everything <em>before</em> installing.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Turn on the STIG security profile</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Open Security Policy and pick the STIG</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">On the hub</span>Click <b>Security Policy</b> → in the list choose <b>"DISA STIG for Red Hat Enterprise Linux 9"</b> → <b>Select profile</b> → <b>Done</b>.</div></div>
+          <p>This tells the installer to lock the box down to the STIG and to <b>check your setup as you go</b>. If your storage doesn't meet the STIG, it shows a yellow warning — that's your cue for the next step.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Give certain folders their OWN storage (separate partitions)</h3>
+      <div class="define"><span class="lbl4">Why separate them? (two simple reasons)</span><b>1) Contain the mess</b> — if one folder fills up (logs are the usual one), it can't fill up and crash the WHOLE box; the flood stays in its own room. <b>2) Its own rules</b> — each room can have safety rules (like "no running programs from /tmp"), which the STIG requires.</div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Open the disk setup and choose custom</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">On the hub</span><b>Installation Destination</b> → pick your disk → choose <b>Custom</b> (or "I will configure partitioning") → <b>Done</b>. Set the type to <b>LVM</b>.</div></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Make a separate slice for each of these</div>
+          <p>The STIG requires each of these on its own partition/volume:</p>
+          <ul class="plain2">
+            <li><code class="k">/</code> — the main system</li>
+            <li><code class="k">/boot</code> — starts the machine (a plain partition, ~1 GB)</li>
+            <li><code class="k">swap</code> — spillover memory</li>
+            <li><code class="k">/home</code> — people's files</li>
+            <li><code class="k">/var</code> — changing system data</li>
+            <li><code class="k">/var/log</code> — the logs</li>
+            <li><code class="k">/var/log/audit</code> — the <b>security audit logs</b> (auditors REALLY check for this one)</li>
+            <li><code class="k">/var/tmp</code> — temporary files</li>
+            <li><code class="k">/tmp</code> — temporary files</li>
+          </ul>
+          <p>If the Security Policy still shows a warning after this, it's telling you a required folder isn't separate yet — add it. Then accept the changes and <b>Done</b>.</p>
+          <div class="did"><span class="lbl5">You did it when…</span>the Security Policy warning about partitions clears (no more yellow "not compliant" note about mount points).</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Finish the install</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Set the root password and make your admin user</div>
+          <p>On the hub, set the <b>Root password</b> and <b>create your admin user</b>. The STIG has strict password rules — use a long, strong one or it'll complain.</p>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Begin the installation</div>
+          <p>Click <b>Begin Installation</b>. It installs the system <em>and</em> applies the STIG lockdown as it goes. Reboot when it's finished.</p>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">After it boots, check the STIG actually took</div>
+          <div class="cmd"><button class="copy">Copy</button>sudo -i
+oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_stig \
+  --report /root/stig.html \
+  /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml</div>
+          <p>Open <code class="k">/root/stig.html</code> in a browser to see pass/fail. (Full scanning/hardening is Runbook 08.)</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Connect the new box to your Satellite (so it can get updates)</h3>
+      <div class="define"><span class="lbl4">Why</span>A brand-new box can't get updates until it's connected to your <b>Satellite</b> — the library that hands out approved software (Runbook 05). Your boss is right: the Satellite can make a <b>ready-made link (a command) you paste</b> on the box to connect it in one shot.</div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Get the link from Satellite</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">In the Satellite web page</span><b>Hosts → Register Host</b> → pick the group/environment and an <b>activation key</b> → it builds a <b>one-line command</b> (a <code class="k">curl … | bash</code>). Copy it.</div></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Make sure the box can REACH the Satellite</div>
+          <p>The box has to be on a network that can talk to the Satellite server (same network or a routable one, and able to look up its name). If it can't reach it, the paste command just hangs/times out. (This is the "same network" part your boss mentioned.)</p>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Paste the command on the new box</div>
+          <div class="cmd"><button class="copy">Copy</button><span class="c"># the exact link comes from Satellite — this is the shape of it:</span>
+curl -sS "https://<span class="ph">satellite.example.com</span>/register?activation_keys=<span class="ph">rhel9-key</span>&amp;..." | bash</div>
+          <p>That one command trusts the Satellite, registers the box, and turns on its software shelves — all at once.</p>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Check it, then update</div>
+          <div class="cmd"><button class="copy">Copy</button>subscription-manager status    <span class="c"># want: Overall Status: Current</span>
+dnf repolist                   <span class="c"># the shelves it can now reach</span>
+dnf -y update                  <span class="c"># it can finally get updates ✓</span></div>
+          <div class="did"><span class="lbl5">Done</span>The STIG'd box is built, locked down, connected to the Satellite, and updating. This is your golden-image starting point (turn it into a template with Runbook 02's freeze step).</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ On RHEL 10</p><p>The installer works the same way — Security Policy + separate partitions. Just confirm a <b>"DISA STIG for RHEL 10"</b> profile is actually in your installer/content before relying on it (the RHEL 10 STIG is newer). Everything else here is the same idea.</p></div>
+      <div class="call blue"><p class="h">▸ No link handy?</p><p>The older by-hand way (install the Satellite trust cert, then <code class="k">subscription-manager register --activationkey</code>) is in Runbook 05 — same result, a few more steps.</p></div>
     </section>
 
     <footer class="foot">
