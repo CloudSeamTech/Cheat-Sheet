@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>SOP Runbooks — Plain-Language Edition</title>
+<style>
+  :root{
+    color-scheme:light dark;
+    --ink:#0f1720; --steel:#1d2733; --steel-2:#26333f; --rail:#123024;
+    --paper:#f5f7f9; --card:#ffffff; --muted:#48576a; --line:#d6dde4;
+    --amber:#a86611; --blue:#2563eb; --green:#1f9d57; --red:#d1495b;
+    --term-bg:#111a22; --term-ink:#e8eef3; --term-c:#7f9bb3; --term-ph:#e0a441;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media screen and (prefers-color-scheme: dark){
+    :root{ --paper:#0d131a; --card:#141d27; --ink:#e9eef3; --muted:#aab6c2; --line:#28323d; --amber:#e0a441; }
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .shell{display:flex;min-height:100vh;max-width:1180px;margin:0 auto}
+  .rail{width:266px;flex:none;background:var(--rail);color:#e8eef3;padding:22px 0 40px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .brand{padding:0 20px 14px}
+  .brand .kick{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#7ee0ad;text-transform:uppercase}
+  .brand h1{font-size:18px;margin:6px 0 6px;line-height:1.2}
+  .brand p{font-size:12px;color:#9fc3b0;margin:0}
+  .brand .ver{margin-top:8px;font-family:var(--mono);font-size:10.5px;color:#7ee0ad;letter-spacing:.04em}
+  .navsec{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6f907f;padding:14px 20px 4px}
+  .navbtn{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;background:none;border:none;color:#c7dcd0;
+    font-family:var(--sans);font-size:13.5px;font-weight:600;padding:8px 20px;cursor:pointer;line-height:1.3}
+  .navbtn:hover{background:rgba(255,255,255,.05);color:#fff}
+  .navbtn[aria-current="true"]{background:var(--steel-2);color:#fff;box-shadow:inset 3px 0 0 #2fbd77}
+  .navbtn .n{font-family:var(--mono);font-size:11px;color:#79997f;width:18px;flex:none}
+  .navbtn.soon{opacity:.5;cursor:default}.navbtn.soon:hover{background:none;color:#c7dcd0}
+  .tag{font-family:var(--mono);font-size:9px;background:#274536;color:#9fc3b0;border-radius:4px;padding:1px 5px;margin-left:4px;align-self:center}
+  main{flex:1;min-width:0;padding:34px 44px 80px}
+  .panel{display:none;max-width:760px}.panel.active{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;margin:0 0 6px}
+  h2.title{font-size:26px;line-height:1.15;margin:0 0 12px;letter-spacing:-.01em}
+  .lead{font-size:16px;color:var(--muted);margin:0 0 16px}
+  .banner{background:rgba(31,157,87,.09);border:1px solid rgba(31,157,87,.4);border-radius:10px;padding:11px 14px;margin:0 0 20px;font-size:13.5px}
+  .banner b{color:var(--green)}
+  h3.phase{font-size:13px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--green);margin:24px 0 12px;padding-top:14px;border-top:1px solid var(--line)}
+  .run{position:relative;margin:6px 0}
+  .rstep{position:relative;padding:0 0 20px 56px}
+  .rstep::before{content:attr(data-n);position:absolute;left:0;top:-2px;width:38px;height:38px;border-radius:50%;
+    background:var(--steel);color:#fff;font-family:var(--mono);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;z-index:1}
+  .rstep::after{content:"";position:absolute;left:18px;top:38px;bottom:-2px;width:2px;background:var(--line)}
+  .rstep:last-child::after{display:none}
+  .rtitle{font-size:16px;font-weight:700;margin:6px 0 8px;line-height:1.3}
+  .rstep p{margin:0 0 10px;font-size:14.5px}
+  code.k{font-family:var(--mono);font-size:.9em;background:rgba(37,99,235,.10);padding:1px 5px;border-radius:4px}
+  .cmd{position:relative;font-family:var(--mono);font-size:13px;line-height:1.65;background:var(--term-bg);color:var(--term-ink);
+    border-radius:10px;padding:12px 15px;margin:0 0 12px;white-space:pre-wrap;word-break:break-word}
+  .cmd .c{color:var(--term-c)}.cmd .ph{color:var(--term-ph);font-style:italic}
+  .cmd .copy{position:absolute;top:8px;right:8px;font-family:var(--sans);font-size:11px;font-weight:600;color:#cdd8e2;background:#2a3b4a;border:none;border-radius:6px;padding:5px 10px;cursor:pointer}
+  .cmd .copy:hover{background:#34495b}.cmd .copy.done{background:var(--green);color:#fff}
+  .out{font-family:var(--mono);font-size:12.5px;line-height:1.5;background:var(--card);border:1px dashed var(--line);
+    border-left:3px solid #4f8fb8;border-radius:9px;padding:9px 12px;margin:0 0 12px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+  .out .lbl2{display:block;font-family:var(--sans);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#4f8fb8;margin-bottom:5px}
+  .click{display:flex;align-items:flex-start;gap:10px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.32);border-radius:10px;padding:10px 13px;margin:0 0 12px}
+  .click .ic{font-size:16px;color:var(--blue);line-height:1.3}.click .t{font-size:14px}
+  .click .lbl{display:block;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--blue);margin-bottom:3px}
+  .click .path b{background:rgba(37,99,235,.14);border-radius:4px;padding:1px 5px}
+  .define{background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.28);border-radius:10px;padding:10px 13px;margin:0 0 12px;font-size:14px}
+  .define .lbl4{display:block;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:3px}
+  .did{background:rgba(31,157,87,.09);border:1px solid rgba(31,157,87,.38);border-radius:10px;padding:9px 13px;margin:0 0 12px;font-size:14px}
+  .did .lbl5{display:block;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green);margin-bottom:3px}
+  .qa{border-left:3px solid var(--green);padding:1px 0 1px 14px;margin:0 0 16px}
+  .qa .q{font-weight:700;font-size:15px;margin:0 0 5px;color:var(--ink)}
+  .qa .a{font-size:14.5px;margin:0;color:var(--ink)}
+  .call{border-radius:10px;padding:11px 14px;margin:4px 0 12px;font-size:14px}
+  .call .h{font-weight:700;margin:0 0 4px;font-size:13px}
+  .call.amber{background:rgba(168,102,17,.10);border:1px solid rgba(168,102,17,.4)}.call.amber .h{color:var(--amber)}
+  .call.red{background:rgba(209,73,91,.10);border:1px solid rgba(209,73,91,.4)}.call.red .h{color:var(--red)}
+  .site{border:1px dashed var(--amber);background:rgba(168,102,17,.07);border-radius:10px;padding:10px 13px;margin:0 0 12px;font-size:13.5px}
+  .site .lbl3{display:block;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);margin-bottom:3px}
+  ul.plain2{margin:6px 0 14px;padding-left:20px}ul.plain2 li{margin:0 0 8px;font-size:14.5px}
+  .foot{max-width:760px;margin:34px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  @media (max-width:820px){
+    .shell{flex-direction:column}
+    .rail{width:100%;height:auto;position:relative;padding:14px 0}
+    .brand{padding:0 16px 8px}.navsec{display:none}
+    nav{display:flex;overflow-x:auto;gap:4px;padding:0 10px}
+    .navbtn{width:auto;white-space:nowrap;border-radius:8px;padding:8px 12px}.navbtn .n{display:none}.navbtn.soon{display:none}
+    main{padding:22px 18px 60px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <div class="kick">Plain-Language Edition</div>
+      <h1>SOP Runbooks — explained simply</h1>
+      <p>Every term explained. Nothing assumed. Tap one.</p>
+      <div class="ver">v1.2 &nbsp;·&nbsp; Basics + 16 + bonus</div>
+    </div>
+    <nav id="nav">
+      <div class="navsec">Read first</div>
+      <button class="navbtn" aria-current="true" data-p="p0"><span class="n">★</span>Start Here: The Basics</button>
+      <div class="navsec">Runbooks</div>
+      <button class="navbtn" data-p="p1"><span class="n">01</span>Navigate vCenter (mission control)</button>
+      <button class="navbtn" data-p="p2"><span class="n">02</span>Make a template from scratch</button>
+      <button class="navbtn" data-p="p3"><span class="n">03</span>Make a new server from a template</button>
+      <button class="navbtn" data-p="p4"><span class="n">04</span>Add / remove user + service accounts</button>
+      <button class="navbtn" data-p="p5"><span class="n">05</span>Give a machine a "library card" (Satellite)</button>
+      <button class="navbtn" data-p="p6"><span class="n">06</span>Big upgrade (8→9) with Leapp</button>
+      <button class="navbtn" data-p="p7"><span class="n">07</span>Update vs Upgrade (what's the difference?)</button>
+      <button class="navbtn" data-p="p8"><span class="n">08</span>Security scan → harden (STIG)</button>
+      <button class="navbtn" data-p="p9"><span class="n">09</span>Back up a machine with Veeam</button>
+      <button class="navbtn" data-p="p10"><span class="n">10</span>Make a RHEL 10 template</button>
+      <button class="navbtn" data-p="p11"><span class="n">11</span>Move to RHEL 10, retire RHEL 9</button>
+      <button class="navbtn" data-p="p12"><span class="n">12</span>Ansible: do a task on many machines</button>
+      <button class="navbtn" data-p="p13"><span class="n">13</span>Build an IDM (login) server</button>
+      <button class="navbtn" data-p="p14"><span class="n">14</span>Join a machine to IDM</button>
+      <button class="navbtn" data-p="p15"><span class="n">15</span>Let Windows/AD users log in</button>
+      <button class="navbtn" data-p="p16"><span class="n">16</span>Kubernetes: run an app in pods</button>
+      <div class="navsec">Extra</div>
+      <button class="navbtn" data-p="pfs"><span class="n">＋</span>Add a disk &amp; make it stick (fstab)</button>
+    </nav>
+  </aside>
+
+  <main id="main">
+
+    <!-- BASICS -->
+    <section class="panel active" id="p0">
+      <p class="eyebrow">★ Read this first</p>
+      <h2 class="title">Start Here: The Basics</h2>
+      <p class="lead">This page explains the handful of words and moves that every other runbook uses — so you only learn them once. If a runbook ever loses you, come back here.</p>
+      <div class="banner">This is the <b>plain-language edition</b>. The shorter, expert version of every runbook lives in the main SOP binder — use whichever fits you.</div>
+
+      <h3 class="phase">The words you'll keep seeing</h3>
+      <div class="define"><span class="lbl4">Terminal</span>The <b>terminal</b> is a plain window where you type instructions to the computer, one line at a time, and press Enter. No mouse — just typing. On a server you reach it two ways: through the <b>Web Console</b> in vCenter, or by <b>SSH</b> (below).</div>
+      <div class="define"><span class="lbl4">Command</span>A <b>command</b> is one line of instruction you type into the terminal. In these guides, anything in a <b>dark box</b> is a command. Tap <b>Copy</b>, paste it into the terminal, and press <b>Enter</b> to run it.</div>
+      <div class="define"><span class="lbl4">SSH</span><b>SSH</b> is a safe way to log in to another computer over the network from your own — like a secure remote control. You type <code class="k">ssh <span class="ph">yourname</span>@<span class="ph">web01</span></code> and now your terminal is "inside" that other machine.</div>
+      <div class="define"><span class="lbl4">Root / sudo (being "the boss")</span>Normal users can't make big changes — that's on purpose, so nothing breaks by accident. <b>root</b> is the all-powerful boss account. <b>sudo</b> means "do this one thing as the boss." When a runbook needs boss power, you'll become root first (next section).</div>
+      <div class="define"><span class="lbl4">Placeholder (the amber italic words)</span>Anything shown in <span style="color:var(--amber);font-style:italic">amber italic</span> — like <span style="color:var(--amber);font-style:italic">web01.example.com</span> — is just an <b>example</b>. Swap in your real name, number, or address when you type it.</div>
+
+      <h3 class="phase">The moves you'll keep making</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Open the terminal on a server</div>
+          <p>Two ways: In vCenter, right-click the machine → <b>Launch Web Console</b> (a screen opens; click into it and type). Or from your own computer's terminal, SSH in:</p>
+          <div class="cmd"><button class="copy">Copy</button>ssh <span class="ph">yourname</span>@<span class="ph">web01.example.com</span></div>
+          <p>The very first time it may ask "are you sure?" — type <code class="k">yes</code> and Enter.</p>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Become the boss (root)</div>
+          <div class="cmd"><button class="copy">Copy</button>sudo -i</div>
+          <p>Press Enter, then type your password. <b>The screen stays blank while you type the password — that's normal, it's hiding it.</b> Keep typing and press Enter.</p>
+          <div class="did"><span class="lbl5">You're the boss when…</span>the end of your prompt changes to a <b>#</b> symbol. (A normal user ends in <b>$</b>.) Type <code class="k">exit</code> when you want to step back down to normal.</div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Run a command &amp; read what happens</div>
+          <p>Paste the command, press Enter. Text scrolls by — that's the computer talking back. If it finishes and gives you a fresh prompt with no red "error" lines, it worked. If you see an error, <b>read the very last line</b> — it usually says what's wrong.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Good-to-know safety</h3>
+      <ul class="plain2">
+        <li><b>Looking is safe.</b> Commands that just <em>show</em> things (like <code class="k">ls</code>, <code class="k">cat</code>, <code class="k">status</code>) can't break anything — explore freely.</li>
+        <li><b>Stop a command</b> that's running too long or looks stuck: hold <b>Ctrl</b> and press <b>C</b>.</li>
+        <li><b>Get out of a full-screen text viewer</b> (like a log): press <b>q</b>.</li>
+        <li><b>When in doubt, don't delete.</b> Deleting is the one thing with no undo. Ask first.</li>
+      </ul>
+    </section>
+
+    <!-- SOP 01 -->
+    <section class="panel" id="p1">
+      <p class="eyebrow">Runbook 01 · plain-language</p>
+      <h2 class="title">Navigate vCenter (Mission Control)</h2>
+      <p class="lead">vCenter is a website where you look after all your virtual computers. This walks you in the front door and shows you what everything is.</p>
+      <div class="define"><span class="lbl4">What is a "virtual machine" (VM)?</span>A <b>VM</b> is a whole computer that lives <em>inside</em> a bigger physical computer. One strong physical server can run many VMs at once. vCenter is where you watch and manage them all.</div>
+
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Open vCenter in a web browser</div>
+          <p>Open Chrome or Edge. Click the address bar at the top, type this, and press Enter:</p>
+          <div class="cmd"><button class="copy">Copy</button>https://<span class="ph">vcenter-fmlbcu.example.com</span>/ui</div>
+          <p>Type your username and password (your normal work login). You're now inside mission control.</p>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Find the list of machines on the left</div>
+          <p>On the left is a <b>tree</b> — a list that opens up like folders. Click the little arrows to open each level. From top to bottom it goes:</p>
+          <ul class="plain2">
+            <li><b>vCenter</b> → the whole system.</li>
+            <li><b>Datacenter</b> → your site.</li>
+            <li><b>Cluster</b> → a team of physical servers working together (yours has <b>two</b>).</li>
+            <li><b>Host</b> → one physical server.</li>
+            <li><b>VM</b> → a virtual computer running on a host.</li>
+          </ul>
+          <p>Find the machines that are yours to look after.</p>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Click a machine to see how it's doing</div>
+          <p>Click any VM, then click the <b>Summary</b> tab at the top. This is its health card. Check:</p>
+          <ul class="plain2">
+            <li>Is it <b>Powered On</b>?</li>
+            <li>Does it show an <b>IP address</b> (its phone number on the network)? If blank, a helper called VMware Tools isn't installed.</li>
+            <li>Any <b>red or yellow warning triangles</b>? Those mean "look at me."</li>
+          </ul>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Peek at the network (which "lane" a machine is in)</div>
+          <div class="define"><span class="lbl4">Port group</span>A <b>port group</b> is a labeled network lane. Every VM is plugged into one lane, and that lane decides which network it's on. Put a machine in the wrong lane and it can't talk to anything.</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Where to look</span>Top-left menu (three lines ☰) → <b>Networking</b> → open your <b>Distributed Switch</b>. The lanes (port groups) are listed underneath it.</div></div>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Peek at storage (is there room?)</div>
+          <div class="define"><span class="lbl4">Datastore</span>A <b>datastore</b> is the hard-drive space where a VM's files live. If it fills up completely, every machine using it freezes — so free space matters.</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Where to look</span>☰ menu → <b>Storage</b> → click a datastore → look at <b>Free</b> space.</div></div>
+        </div>
+      </div>
+
+      <h3 class="phase">The golden rules (what to do &amp; not do)</h3>
+      <div class="call red"><p class="h">✕ Please DON'T</p><p>Don't rename or delete <b>port groups</b>, the switch, or a <b>datastore</b>. Don't pick <b>"Delete from Disk"</b> on a VM (that erases it). Don't turn off a physical host without "maintenance mode." If you're unsure what a button does, <b>don't click it</b> — ask.</p></div>
+      <div class="call amber"><p class="h">◆ DO</p><p>Look around all you want (looking is safe). Read the warning triangles first. And when you're about to change something, tell a teammate / log it.</p></div>
+      <div class="did"><span class="lbl5">You did it when…</span>you can log in, find your machines in the tree, and tell whether each one is powered on, has an IP, and has any warnings.</div>
+    </section>
+
+    <!-- SOP 05 -->
+    <section class="panel" id="p5">
+      <p class="eyebrow">Runbook 05 · plain-language</p>
+      <h2 class="title">Give a Machine a "Library Card" (Register to Satellite)</h2>
+      <p class="lead">The <b>Satellite</b> is like a big library that holds all the software your machines are allowed to use. Before a machine can borrow software, it needs a library card. That's what "registering" is.</p>
+      <div class="define"><span class="lbl4">Why we do this</span>Your machines can't reach the internet. Instead they get everything from the Satellite library. A machine with no card can't install or update anything — so this is step one for almost every new box.</div>
+
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Get onto the machine and become the boss</div>
+          <p>Open the terminal on the machine (Web Console, or SSH in), then become root — see <b>The Basics</b>:</p>
+          <div class="cmd"><button class="copy">Copy</button>sudo -i</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Give the machine the library's ID card (so it trusts the library)</div>
+          <p>Type this one line. It downloads and installs the library's trust certificate so the machine knows the library is the real one:</p>
+          <div class="cmd"><button class="copy">Copy</button>rpm -Uvh http://<span class="ph">satellite.example.com</span>/pub/katello-ca-consumer-latest.noarch.rpm</div>
+          <div class="did"><span class="lbl5">It worked when…</span>a couple of lines scroll by and you get a fresh prompt with no error. (If it says "certificate" errors later, this step is usually why — run it again.)</div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Sign up for the card using your "activation key"</div>
+          <div class="define"><span class="lbl4">Activation key</span>An <b>activation key</b> is a pre-made signup code your team created in the Satellite. It automatically puts the machine in the right group and turns on the right software shelves — so you don't set those by hand. Ask your team for the key name.</div>
+          <div class="cmd"><button class="copy">Copy</button>subscription-manager register --org="<span class="ph">FMLBCU</span>" --activationkey="<span class="ph">rhel9-prod-key</span>"</div>
+          <div class="out"><span class="lbl2">You'll see</span>The system has been registered with ID: 7f3a...
+Installed Product Current Status:  Subscribed   ← it has a card now ✓</div>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Double-check the card works</div>
+          <p>These two commands ask "who am I, and am I healthy?"</p>
+          <div class="cmd"><button class="copy">Copy</button>subscription-manager identity
+subscription-manager status</div>
+          <div class="out"><span class="lbl2">Good means</span>org name: FMLBCU
+Overall Status: Current   ← healthy ✓</div>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Prove it can borrow software</div>
+          <p>Refresh the machine's list of what's available, then install one small thing as a test:</p>
+          <div class="cmd"><button class="copy">Copy</button>dnf clean all
+dnf repolist            <span class="c"># shows the software shelves it can now reach</span>
+dnf install -y <span class="ph">tmux</span>      <span class="c"># a tiny test install</span></div>
+          <div class="did"><span class="lbl5">You did it when…</span>the test program installs from your Satellite (you'll see its address in the output). The machine now has its library card and can get software and updates.</div>
+        </div>
+      </div>
+      <div class="site"><span class="lbl3">Ask your team</span>The exact <b>activation key name</b> and which <b>org</b> to use are set by your site. Get those two values before you start.</div>
+    </section>
+
+    <!-- SOP 07 -->
+    <section class="panel" id="p7">
+      <p class="eyebrow">Runbook 07 · plain-language</p>
+      <h2 class="title">Update vs Upgrade — What's the Difference?</h2>
+      <p class="lead">These two words sound the same but mean very different jobs. Mixing them up is the #1 beginner confusion, so let's make it simple.</p>
+
+      <div class="define"><span class="lbl4">The easy way to remember it</span><b>UPDATE</b> = small touch-ups to the <em>same</em> version (like getting this week's fixes for RHEL 9). Easy and routine. <br><b>UPGRADE</b> = moving to a whole <em>new</em> version (like RHEL 9 → RHEL 10). A big, careful project — a different runbook (06).</div>
+
+      <h3 class="phase">Do a routine update (the small, easy job)</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Get on the machine and become the boss</div>
+          <div class="cmd"><button class="copy">Copy</button>sudo -i</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">See what fixes are waiting</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf check-update         <span class="c"># lists software with newer versions ready</span></div>
+          <p>If lots of lines appear, there are updates waiting. If nothing appears, you're already current — you're done.</p>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Take a quick safety copy (for important machines)</div>
+          <p>In vCenter, right-click the VM → <b>Snapshots</b> → <b>Take Snapshot</b>. This is an "undo point" you can jump back to if an update misbehaves. (Delete it once everything's fine.)</p>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Install the fixes</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf update              <span class="c"># installs everything waiting</span></div>
+          <p>It shows a list and asks "Is this ok?" — type <code class="k">y</code> and Enter. Let it finish.</p>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Reboot only if it tells you to</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf needs-restarting -r</div>
+          <div class="out"><span class="lbl2">It answers plainly</span>"Reboot is required..."  → type: reboot
+"No core libraries...updated." → you're done, no reboot needed</div>
+          <div class="did"><span class="lbl5">You did it when…</span>the updates installed with no errors, and you rebooted if it asked. That's a routine update — done.</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Why you can't just "update" your way to a new version</h3>
+      <p>People ask: "if update gets new stuff, why can't I update from RHEL 9 all the way to RHEL 10?" Here's the simple reason:</p>
+      <ul class="plain2">
+        <li>A new <b>major version</b> (9 → 10) rebuilds almost the <em>whole</em> operating system at once — like renovating a house down to the walls, not just repainting. The normal update tool can't safely do that.</li>
+        <li>A special tool called <b>Leapp</b> (runbook 06) does the big renovation carefully, one careful step at a time, with restarts.</li>
+        <li>And you <b>can't skip</b>: you go 8 → 9, then 9 → 10. There's no jumping straight from 8 to 10.</li>
+      </ul>
+      <div class="call amber"><p class="h">◆ So, in one sentence</p><p><b>Update</b> keeps a machine healthy on the version it's already on. <b>Upgrade</b> (Leapp) is the only way to move it to the next version — and it's a planned project, not a quick command.</p></div>
+    </section>
+
+    <!-- SOP 09 -->
+    <section class="panel" id="p9">
+      <p class="eyebrow">Runbook 09 · plain-language</p>
+      <h2 class="title">Back Up a Machine With Veeam</h2>
+      <p class="lead"><b>Veeam</b> is a program that makes safety copies of your whole machine, so if something breaks you can bring it back. This makes a copy — and then proves the copy actually works.</p>
+      <div class="define"><span class="lbl4">Backup vs snapshot</span>A vCenter <b>snapshot</b> is a quick short-term "undo point" that lives on the same storage as the machine. A <b>Veeam backup</b> is a real, separate copy kept somewhere else — it survives even if the machine is deleted. For real safety, you want the backup.</div>
+
+      <h3 class="phase">Make the backup</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Open the Veeam program</div>
+          <p>On the Veeam server (or wherever your team runs it), open the <b>Veeam Backup &amp; Replication</b> console. Click <b>Home</b> on the left.</p>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Start a new backup job</div>
+          <div class="define"><span class="lbl4">Backup "job"</span>A <b>job</b> is just a saved recipe that says "copy THESE machines, THIS often, and keep THIS many copies." You set it up once and it can run on a schedule.</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Do this</span><b>Home</b> → <b>Backup Job</b> → <b>Virtual machine</b> → <b>VMware vSphere</b>. Give it a clear name like <span style="color:var(--amber);font-style:italic">Daily-Web01</span>.</div></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Pick the machine to copy</div>
+          <p>Click <b>Add</b>, browse the list from vCenter, and pick your VM. (You can pick several.)</p>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Say where to keep it and for how long</div>
+          <p>Choose the <b>repository</b> (the storage where backups are kept — your team has one set up) and set how many copies to keep (for example, 14 days' worth). Click through to the end and <b>Finish</b>.</p>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Run it now</div>
+          <p>Right-click your new job → <b>Start</b>. Watch it until it says <b>Success</b> (green).</p>
+          <div class="call amber"><p class="h">◆ You may see a snapshot blink in vCenter</p><p>While Veeam copies, it briefly makes a snapshot and then removes it. Totally normal — don't worry if you see one appear and vanish.</p></div>
+        </div>
+      </div>
+
+      <h3 class="phase">Prove the backup actually works</h3>
+      <div class="run">
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Do a small test restore</div>
+          <p>A backup you've never tested isn't really a backup yet. So test it: <b>Home</b> → <b>Backups</b> → find your machine → right-click a copy → <b>Restore guest files</b>, and pull one file back out.</p>
+          <div class="did"><span class="lbl5">You did it when…</span>the job shows <b>Success</b>, you can see a dated copy, and your test restore brought a file back. Now it's a real, trustworthy backup.</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ The one rule to remember</p><p>A copy you've never restored is just a hope. Test-restore now and then, so you're not finding out during a real emergency.</p></div>
+    </section>
+
+    <!-- SOP 02 -->
+    <section class="panel" id="p2">
+      <p class="eyebrow">Runbook 02 · plain-language</p>
+      <h2 class="title">Make a Template From Scratch (a "Cookie Cutter")</h2>
+      <p class="lead">A <b>template</b> is a master copy of a perfect machine — like a cookie cutter. You build one good machine once, freeze it as a stamp, and then make identical fresh copies whenever you need a new server.</p>
+      <div class="define"><span class="lbl4">Why bother?</span>Instead of building every new server by hand (slow, and easy to get wrong), you build it perfectly one time. Every copy comes out the same — already updated, secured, and ready.</div>
+
+      <h3 class="phase">Get the Red Hat "setup disc"</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Download RHEL from Red Hat's website</div>
+          <div class="define"><span class="lbl4">ISO</span>An <b>ISO</b> is the whole setup disc squished into one file — like the install CD for the operating system. You "boot" a blank machine from it to install RHEL fresh.</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Do this (on an internet computer — the low side)</span>Go to <b>access.redhat.com</b> → log in → <b>Downloads</b> → <b>Red Hat Enterprise Linux</b>. Pick your version, then download the <b>"Binary DVD ISO"</b> (the full installer — not the tiny "Boot ISO" or the other formats).</div></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Carry it across to your side</div>
+          <div class="site"><span class="lbl3">Ask your team</span>Copy the ISO onto your <b>approved media</b>, move it across <b>the way your site allows</b>, and put it on <b>the share / storage your team uses</b>. Follow every scanning/approval step.</div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Put the disc where vCenter can reach it</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Do this</span>In vCenter: ☰ menu → <b>Storage</b> → pick a datastore → <b>Files</b> → <b>Upload Files</b> → choose the ISO.</div></div>
+        </div>
+      </div>
+
+      <h3 class="phase">Build the one perfect machine</h3>
+      <div class="run">
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Make a brand-new empty machine</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Do this</span>Right-click your cluster → <b>New Virtual Machine</b> → <b>Create a new VM</b>. Name it like a template, e.g. <span style="color:var(--amber);font-style:italic">tmpl-rhel9-base</span>. Guest OS = <b>Red Hat Enterprise Linux 9</b>. Give it CPU/memory/disk.</div></div>
+          <p>On the CD/DVD setting, choose <b>Datastore ISO File</b>, pick the ISO you uploaded, and tick <b>Connect at power on</b> (that's "put the setup disc in the drive").</p>
+          <div class="call amber"><p class="h">◆ Put it on the "practice lane," not the real network</p><p>Set its network to a safe, non-production lane (a staging/management port group) for now. A brand-new, not-yet-secured machine should never touch the real network yet. The real network gets set when you make copies (Runbook 03).</p></div>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Turn it on and install RHEL</div>
+          <p>Power it on, open the <b>Web Console</b>, and follow the on-screen installer: disk layout, a root (boss) password, an admin user, timezone. Let it finish and reboot to a login screen.</p>
+          <div class="did"><span class="lbl5">You did it when…</span>the machine boots to a normal RHEL login prompt.</div>
+        </div>
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Set it up the way EVERY machine should start</div>
+          <p>Log in, become the boss, and give it your standard setup — this is what makes it "golden":</p>
+          <div class="cmd"><button class="copy">Copy</button>subscription-manager register --org="<span class="ph">FMLBCU</span>" --activationkey="<span class="ph">rhel9-key</span>"   <span class="c"># library card (Runbook 05)</span>
+dnf -y update                                <span class="c"># get current on updates</span>
+dnf -y install open-vm-tools <span class="ph">your-standard-tools</span>    <span class="c"># your usual programs</span></div>
+          <p>Then run your security hardening (Runbook 08). Everything you set here, every future copy will have too.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Freeze it into the cookie cutter</h3>
+      <div class="run">
+        <div class="rstep" data-n="7">
+          <div class="rtitle">Wipe its "fingerprints" first</div>
+          <div class="define"><span class="lbl4">Why wipe fingerprints?</span>Every machine has a few unique IDs. If you copy the machine without clearing them, all the copies are identical twins and they'll <b>fight on the network</b>. Clearing them lets each copy make its own fresh IDs on first boot.</div>
+          <div class="cmd"><button class="copy">Copy</button>truncate -s 0 /etc/machine-id     <span class="c"># clear the unique machine ID</span>
+rm -f /etc/ssh/ssh_host_*         <span class="c"># clear its SSH host keys</span>
+subscription-manager unregister   <span class="c"># give back the library card (copies get their own)</span>
+dnf clean all
+poweroff                          <span class="c"># turn it off</span></div>
+        </div>
+        <div class="rstep" data-n="8">
+          <div class="rtitle">Turn the machine into a template</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Do this</span>Right-click the powered-off machine → <b>Template</b> → <b>Convert to Template</b>.</div></div>
+          <p>It now shows a template icon and <b>can't be turned on</b> — that's correct. You never run the cookie cutter; you stamp copies from it.</p>
+          <div class="did"><span class="lbl5">You did it when…</span>you see <span style="color:var(--amber);font-style:italic">tmpl-rhel9-base</span> listed as a <b>Template</b>. Every new RHEL 9 server is now made from this (Runbook 03).</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ About the template's network</p><p>Don't put a real IP address in the template — every copy would clash. The template stays on the "practice lane" with no fixed address; each copy gets its own real network and address when you deploy it (Runbook 03).</p></div>
+    </section>
+
+    <!-- SOP 03 -->
+    <section class="panel" id="p3">
+      <p class="eyebrow">Runbook 03 · plain-language</p>
+      <h2 class="title">Make a New Server From a Template</h2>
+      <p class="lead">Now you stamp out a fresh copy from the cookie cutter (Runbook 02) and give it its own name and address — the safe, proper way.</p>
+
+      <h3 class="phase">Before you start</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Know these four things first</div>
+          <ul class="plain2">
+            <li>The new machine's <b>name</b> (and what it's for).</li>
+            <li>Which <b>network lane</b> (port group / VLAN) it belongs on.</li>
+            <li>Its <b>IP address</b>, mask, gateway, and DNS (its network address details).</li>
+            <li>Which <b>datastore</b> (storage with room) to put it on.</li>
+          </ul>
+          <p>If you don't have these, get them before you click — you'll be asked mid-way.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Stamp out the copy</h3>
+      <div class="run">
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Start a new machine from the template</div>
+          <div class="click"><span class="ic">☞</span><div class="t"><span class="lbl">Do this</span>Right-click <span style="color:var(--amber);font-style:italic">tmpl-rhel9-base</span> → <b>New VM from This Template</b>.</div></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Give it a name and pick its folder</div>
+          <p>Type the new server's name; choose the folder it should live in.</p>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Pick which physical server runs it</div>
+          <p>Choose the host or cluster. If unsure, let the system place it automatically.</p>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Pick storage with free space</div>
+          <p>Choose a <b>datastore</b> that has room. (The copy's disk is written here — a full datastore makes it fail.)</p>
+        </div>
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Pick the REAL network lane (not the practice one)</div>
+          <p>On the "Select networks" screen, choose the <b>real production port group</b> this server belongs on. This is where you move it off the template's practice lane.</p>
+        </div>
+        <div class="rstep" data-n="7">
+          <div class="rtitle">Turn on "Customize" so it gets its OWN identity</div>
+          <div class="define"><span class="lbl4">Customization Spec</span>A <b>Customization Spec</b> is a little settings sheet your team makes once. When you apply it, it stamps a <b>unique name and IP address</b> onto the new copy on first boot — so it's its own machine, not a clone of the master.</div>
+          <p>Tick <b>Customize the operating system</b> and pick the Linux spec. This is the secure, repeatable way — much better than hand-typing an IP after.</p>
+        </div>
+        <div class="rstep" data-n="8">
+          <div class="rtitle">Finish and power it on</div>
+          <p>Review the summary, click <b>Finish</b>, then power it on. Watch it in the <b>Recent Tasks</b> bar at the bottom.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Check it, then bring it into the fold</h3>
+      <div class="run">
+        <div class="rstep" data-n="9">
+          <div class="rtitle">Make sure it came up as its OWN machine</div>
+          <div class="cmd"><button class="copy">Copy</button>hostnamectl            <span class="c"># its new name (not the template's)</span>
+cat /etc/machine-id    <span class="c"># a NEW ID ✓</span>
+ip -br a               <span class="c"># its own IP address</span></div>
+          <div class="did"><span class="lbl5">Good means…</span>a new name, a new machine-id, and its own IP — not the master's.</div>
+        </div>
+        <div class="rstep" data-n="10">
+          <div class="rtitle">Register, update, join, check, secure</div>
+          <p>Get it fully set up and safe:</p>
+          <div class="cmd"><button class="copy">Copy</button>subscription-manager register --org="<span class="ph">FMLBCU</span>" --activationkey="<span class="ph">rhel9-key</span>"   <span class="c"># library card</span>
+dnf -y update
+ipa-client-install --mkhomedir --server=<span class="ph">idm.example.com</span> --domain=<span class="ph">example.com</span>   <span class="c"># join the login server</span>
+ss -tulpn              <span class="c"># what's listening? close anything you don't expect</span>
+systemctl --failed     <span class="c"># anything broken?</span></div>
+          <p>Then run your hardening. Only after this is the server ready for its job.</p>
+          <div class="did"><span class="lbl5">You did it when…</span>the new server has its own identity, a library card, is joined to the login server, has nothing odd listening, and is hardened.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOP 04 -->
+    <section class="panel" id="p4">
+      <p class="eyebrow">Runbook 04 · plain-language</p>
+      <h2 class="title">Add / Remove Accounts (People &amp; "Robot" Accounts)</h2>
+      <p class="lead">An account is like giving someone a <b>key to the building</b>. This shows how to make a key for a person, turn one off, and make special keys for <b>programs</b> (robot accounts). Normally logins come from the central login server (IDM) — this is the by-hand way for when you can't use it.</p>
+
+      <h3 class="phase">Make an account for a person</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Get on the machine and become the boss</div>
+          <div class="cmd"><button class="copy">Copy</button>sudo -i</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Create the account</div>
+          <div class="cmd"><button class="copy">Copy</button>useradd -m -s /bin/bash -c "<span class="ph">Jane Doe</span>" <span class="ph">jdoe</span></div>
+          <div class="define"><span class="lbl4">What the pieces mean</span><b>-m</b> = give them their own home folder (their own space for files). <b>-s /bin/bash</b> = give them a command window when they log in. <b>-c "Jane Doe"</b> = their full name, just a label. <b>jdoe</b> = the short username they'll type to log in.</div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Give them a starting password</div>
+          <div class="cmd"><button class="copy">Copy</button>passwd <span class="ph">jdoe</span>         <span class="c"># type a starting password (twice)</span>
+chage -d 0 <span class="ph">jdoe</span>     <span class="c"># make them change it the first time they log in</span></div>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">If they're an admin, give them "boss powers"</div>
+          <div class="define"><span class="lbl4">wheel</span><b>wheel</b> is the group of people allowed to use <code class="k">sudo</code> (boss powers). Adding someone to it lets them run admin commands.</div>
+          <div class="cmd"><button class="copy">Copy</button>usermod -aG wheel <span class="ph">jdoe</span></div>
+          <div class="call red"><p class="h">✕ Never leave out the <code class="k">-a</code></p><p>Type <code class="k">-aG</code> (with the <b>a</b>), never just <code class="k">-G</code>. Without the <b>a</b> it <em>replaces</em> all their groups instead of adding one — which can lock them out.</p></div>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Add their SSH key (key comes from THEM)</div>
+          <div class="define"><span class="lbl4">Where the key comes from</span>The person makes the key <b>on their own computer</b> — the private half stays with them forever; they send you only the <b>public</b> half. On <b>their</b> machine they run: <code class="k">ssh-keygen -t ed25519</code>, then <code class="k">cat ~/.ssh/id_ed25519.pub</code>, and send you that one line.</div>
+          <p>You paste their <b>public</b> line onto this machine (never their private key):</p>
+          <div class="cmd"><button class="copy">Copy</button>mkdir -p /home/<span class="ph">jdoe</span>/.ssh
+echo "<span class="ph">ssh-ed25519 AAAA...jdoe@laptop</span>" >> /home/<span class="ph">jdoe</span>/.ssh/authorized_keys
+chmod 700 /home/<span class="ph">jdoe</span>/.ssh
+chmod 600 /home/<span class="ph">jdoe</span>/.ssh/authorized_keys
+chown -R <span class="ph">jdoe</span>:<span class="ph">jdoe</span> /home/<span class="ph">jdoe</span>/.ssh</div>
+          <div class="call amber"><p class="h">◆ Two quick rules</p><p>Only the <b>public</b> key (the <code class="k">.pub</code> one) ever leaves their computer — if anyone hands you a <em>private</em> key, stop. And those <code class="k">chmod</code> lines matter: get the folder/file permissions wrong and SSH quietly refuses the key.</p></div>
+        </div>
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Check it worked</div>
+          <div class="cmd"><button class="copy">Copy</button>id <span class="ph">jdoe</span></div>
+          <div class="out"><span class="lbl2">You'll see</span>uid=1002(jdoe) ... groups=1002(jdoe),10(wheel)   ← "wheel" means they got boss powers ✓</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Turn off or delete an account</h3>
+      <div class="call amber"><p class="h">◆ Turn off first, delete later</p><p>Turning off is like <b>deactivating a key card</b> — reversible, and it keeps a record. Deleting is permanent. Most places turn off and keep the account for a while before deleting.</p></div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Turn it off (reversible)</div>
+          <div class="cmd"><button class="copy">Copy</button>usermod -L <span class="ph">jdoe</span>              <span class="c"># lock the password</span>
+chage -E 0 <span class="ph">jdoe</span>              <span class="c"># mark the account expired (blocks login)</span>
+usermod -s /sbin/nologin <span class="ph">jdoe</span>  <span class="c"># take away the command window</span></div>
+          <p>To turn it back on later: <code class="k">usermod -U <span class="ph">jdoe</span></code>, <code class="k">chage -E -1 <span class="ph">jdoe</span></code>, <code class="k">usermod -s /bin/bash <span class="ph">jdoe</span></code>.</p>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Delete it (permanent — no undo)</div>
+          <div class="cmd"><button class="copy">Copy</button>userdel <span class="ph">jdoe</span>      <span class="c"># removes the account, KEEPS their home folder</span>
+userdel -r <span class="ph">jdoe</span>   <span class="c"># ALSO deletes their home folder</span></div>
+          <div class="call red"><p class="h">✕ Careful</p><p><code class="k">userdel -r</code> erases their files with no undo. Make sure nothing important is in their folder first.</p></div>
+        </div>
+      </div>
+
+      <h3 class="phase">Robot account #1 — never logs in (for a program)</h3>
+      <div class="define"><span class="lbl4">What's a service account?</span>A <b>service account</b> is a key for a <b>program</b>, not a person. If the program just runs quietly on the box, its account should <b>never be able to log in</b> and should have <b>no password</b>.</div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Make it with no login and no password</div>
+          <div class="cmd"><button class="copy">Copy</button>useradd -r -M -s /sbin/nologin -c "<span class="ph">App X runtime</span>" <span class="ph">svc-appx</span>
+passwd -l <span class="ph">svc-appx</span>     <span class="c"># lock the password so it truly can't log in</span></div>
+          <div class="define"><span class="lbl4">The pieces</span><b>-r</b> = a "system" account (for programs). <b>-s /sbin/nologin</b> = <b>no command window — can't log in</b>. <b>-M</b> = no home folder needed. No password is ever set.</div>
+          <div class="did"><span class="lbl5">Check it</span><code class="k">getent passwd <span class="ph">svc-appx</span></code> should end in <b>/sbin/nologin</b>. The program runs as this account; nobody logs in as it.</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Robot account #2 — DOES log in (like the security scanner)</h3>
+      <div class="define"><span class="lbl4">Why this one is different</span>Some robots <b>have to</b> log in to each machine to do their job — the security scanner (ACAS/Nessus) logs into every box to check it. So this account <b>needs</b> a command window. We keep it safe a different way: key-only, locked to the scanner, and given just the power it needs.</div>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Make it WITH a command window</div>
+          <div class="cmd"><button class="copy">Copy</button>useradd -m -s /bin/bash -c "ACAS scan account" <span class="ph">svc-acas</span></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Key only, no password, never expires</div>
+          <p>The scanner owns the key. You put its <b>public</b> key here, then lock the password so only the key works:</p>
+          <div class="cmd"><button class="copy">Copy</button>mkdir -p /home/<span class="ph">svc-acas</span>/.ssh
+echo "<span class="ph">ssh-ed25519 AAAA...scanner_key</span>" >> /home/<span class="ph">svc-acas</span>/.ssh/authorized_keys
+chmod 700 /home/<span class="ph">svc-acas</span>/.ssh; chmod 600 /home/<span class="ph">svc-acas</span>/.ssh/authorized_keys
+chown -R <span class="ph">svc-acas</span>:<span class="ph">svc-acas</span> /home/<span class="ph">svc-acas</span>/.ssh
+passwd -l <span class="ph">svc-acas</span>          <span class="c"># key only, no password</span>
+chage -M -1 -E -1 <span class="ph">svc-acas</span>   <span class="c"># never expire (don't lock it mid-scan)</span></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Give it the boss power it needs to scan</div>
+          <p>Credentialed scans need to read protected files, so it uses <code class="k">sudo</code>. Because it runs on its own (no human to type a password), add a "no-password sudo" rule — always edit with <code class="k">visudo</code>:</p>
+          <div class="cmd"><button class="copy">Copy</button>visudo -f /etc/sudoers.d/<span class="ph">svc-acas</span></div>
+          <div class="cmd"><button class="copy">Copy</button><span class="ph">svc-acas</span> ALL=(root) NOPASSWD: ALL</div>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Lock it to the scanner only</div>
+          <p>Pin its key so it only works from the scanner's address — add <code class="k">from="..."</code> in front of its key line:</p>
+          <div class="cmd"><button class="copy">Copy</button><span class="c"># in /home/svc-acas/.ssh/authorized_keys</span>
+from="<span class="ph">10.1.1.40</span>" ssh-ed25519 <span class="ph">AAAA...scanner_key</span></div>
+          <div class="did"><span class="lbl5">You did it when…</span>the scanner can log in as <code class="k">svc-acas</code> using its key (only from its own address) and run its checks. In the scanner (ACAS/Nessus) settings, set SSH → public key → username <code class="k">svc-acas</code> → escalation <code class="k">sudo</code>.</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ Doing 40 machines? Don't do it by hand.</p><p>This account has to exist on every machine the scanner checks — but you push it to all of them at once with Ansible (Runbook 12), or bake it into your template (Runbook 02) so new machines already have it. Never repeat these steps 40 times.</p></div>
+    </section>
+
+    <!-- SOP 06 -->
+    <section class="panel" id="p6">
+      <p class="eyebrow">Runbook 06 · plain-language</p>
+      <h2 class="title">Big Upgrade (RHEL 8 → 9) With Leapp</h2>
+      <p class="lead">A <b>big upgrade</b> moves a machine to a whole new version. Think of it like renovating a house down to the walls — not just repainting. Because it's a big job, you build safety nets <em>first</em>, then let a special tool do the renovation carefully.</p>
+      <div class="define"><span class="lbl4">Leapp</span><b>Leapp</b> is Red Hat's renovation tool. It does the whole version change in careful steps, with restarts. You never do a big upgrade with the normal update command — only Leapp.</div>
+      <div class="call red"><p class="h">✕ Practice on a test machine first</p><p>Never do your first-ever Leapp on a machine people rely on. Try it on a spare/test box, and always make the safety nets in step 1.</p></div>
+
+      <h3 class="phase">Build safety nets, then get ready</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Make TWO safety nets first</div>
+          <p>In vCenter, right-click the machine → <b>Snapshots</b> → <b>Take Snapshot</b> (a quick "undo point"). Also make sure it has a good <b>Veeam backup</b> (Runbook 09). If the renovation goes wrong, these bring it back.</p>
+          <div class="define"><span class="lbl4">Why both?</span>A snapshot is a fast undo, but it lives on the same storage. A Veeam backup is a separate, real copy. Two nets = you're safe even if one fails.</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Get fully current on version 8 first</div>
+          <p>Become the boss, update everything, and reboot. (You can't renovate a run-down house — bring it up to date first.)</p>
+          <div class="cmd"><button class="copy">Copy</button>sudo -i
+dnf update
+reboot        <span class="c"># if the update changed the core</span></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Make sure it can reach the new version's software</div>
+          <p>The machine gets the version-9 software from your Satellite library. Confirm it still has its library card (Runbook 05):</p>
+          <div class="cmd"><button class="copy">Copy</button>subscription-manager identity</div>
+          <div class="site"><span class="lbl3">Ask your team</span>The Satellite must actually have <b>RHEL 9 software</b> loaded for this machine's group. If it only has version 8, the upgrade has nothing to move to — check with whoever runs the Satellite.</div>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Install the renovation tool</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf install -y leapp-upgrade</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Check, fix, then renovate</h3>
+      <div class="run">
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Run the "check first" — it changes nothing</div>
+          <div class="cmd"><button class="copy">Copy</button>leapp preupgrade</div>
+          <p>This just inspects the machine and writes a <b>to-do list</b> of anything that would block the upgrade. Nothing is changed yet.</p>
+        </div>
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Read the list and fix every "inhibitor"</div>
+          <div class="define"><span class="lbl4">Inhibitor</span>An <b>inhibitor</b> is a hard blocker — a problem you must fix before the upgrade will run. Common ones: leftover non–Red Hat programs, or not enough free disk space.</div>
+          <div class="cmd"><button class="copy">Copy</button>less /var/log/leapp/leapp-report.txt   <span class="c"># press q to quit the viewer</span></div>
+          <div class="call amber"><p class="h">◆ The usual culprit</p><p>Extra programs from other vendors (like a security appliance) are the #1 blocker. Sometimes the cleaner path is to build a fresh version-9 machine (Runbook 02/03) and reinstall the app, instead of fighting the blockers.</p></div>
+        </div>
+        <div class="rstep" data-n="7">
+          <div class="rtitle">Do the upgrade, then reboot</div>
+          <div class="cmd"><button class="copy">Copy</button>leapp upgrade
+reboot</div>
+          <div class="call red"><p class="h">✕ Watch it in the vCenter Web Console</p><p>The machine will <b>reboot more than once</b> and your SSH connection will drop — that's expected, don't panic. Open the machine's <b>Web Console</b> in vCenter to watch it work through the renovation.</p></div>
+        </div>
+        <div class="rstep" data-n="8">
+          <div class="rtitle">Check it landed on version 9</div>
+          <div class="cmd"><button class="copy">Copy</button>cat /etc/redhat-release   <span class="c"># should now say 9.x</span>
+systemctl --failed        <span class="c"># nothing broken?</span></div>
+          <div class="did"><span class="lbl5">You did it when…</span>it says release 9.x and shows "0 loaded units" (nothing failed). Then run a normal update and test your app. If it went wrong — jump back with the snapshot or Veeam.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOP 08 -->
+    <section class="panel" id="p8">
+      <p class="eyebrow">Runbook 08 · plain-language</p>
+      <h2 class="title">Security Scan → Harden a Machine (STIG)</h2>
+      <p class="lead">A <b>STIG</b> is a security checklist — like a home inspection that checks every lock and alarm. First you <b>scan</b> (find what's unlocked), then you <b>harden</b> (lock it down), then you save the report for your security officer.</p>
+      <div class="define"><span class="lbl4">The words</span><b>STIG</b> = the official security checklist. <b>SCAP / OpenSCAP</b> = the tool that checks the machine against the checklist automatically. <b>Finding</b> = something on the list that failed and needs fixing. <b>ISSO</b> = your security officer, who wants the results.</div>
+
+      <h3 class="phase">Scan (find what's unlocked)</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Install the scanner and the checklist</div>
+          <div class="cmd"><button class="copy">Copy</button>sudo -i
+dnf install -y openscap-scanner scap-security-guide</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Run the scan (it makes a report you can read)</div>
+          <div class="cmd"><button class="copy">Copy</button>mkdir -p /var/log/compliance
+oscap xccdf eval \
+  --profile xccdf_org.ssgproject.content_profile_stig \
+  --results /var/log/compliance/stig-results.xml \
+  --report  /var/log/compliance/stig-report.html \
+  /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml</div>
+          <p>Open the <b>stig-report.html</b> file in a web browser. Each item is <b>pass</b> or <b>fail</b>, grouped by how serious it is. The fails are your to-do list.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Harden (lock it down) — carefully</h3>
+      <div class="run">
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Snapshot first, then get the auto-fix list</div>
+          <p>Take a vCenter snapshot (undo point). Then have the tool write a fix-it playbook from the same checklist:</p>
+          <div class="cmd"><button class="copy">Copy</button>oscap xccdf generate fix \
+  --profile xccdf_org.ssgproject.content_profile_stig \
+  --fix-type ansible \
+  /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml > stig-remediate.yml</div>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Apply a few fixes, then scan again</div>
+          <p>Apply the fixes (on a test machine first), then re-scan to watch the score go up. Don't blindly apply everything to a live machine at once.</p>
+          <div class="call red"><p class="h">✕ Two things that can break a machine</p><p>Never turn off <b>SELinux</b> (a security guard the checklist requires). And test after strict changes (FIPS, locked-down folders, password lockouts) — they can block logins or apps. Your snapshot lets you undo.</p></div>
+        </div>
+      </div>
+
+      <h3 class="phase">Save the results for your security officer</h3>
+      <div class="run">
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Make the checklist file &amp; send it</div>
+          <div class="cmd"><button class="copy">Copy</button>oscap xccdf eval \
+  --profile xccdf_org.ssgproject.content_profile_stig \
+  --stig-viewer /var/log/compliance/<span class="ph">web01</span>-stig.xml \
+  /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml</div>
+          <p>Open that file in <b>DISA STIG Viewer</b> to make the official checklist (CKL). (The Navy tool <b>Evaluate-STIG</b> can make it for you automatically.)</p>
+          <div class="site"><span class="lbl3">Ask your team</span>Send the checklist/results to <b>your compliance system or ISSO</b> the way your site requires, and note anything you couldn't fix yet.</div>
+          <div class="did"><span class="lbl5">You did it when…</span>you have a scan report, you've fixed the fails you safely can, the score improved on re-scan, and the checklist is delivered.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOP 12 -->
+    <section class="panel" id="p12">
+      <p class="eyebrow">Runbook 12 · plain-language</p>
+      <h2 class="title">Ansible: Do a Task on Many Machines at Once</h2>
+      <p class="lead"><b>Ansible</b> is like a universal remote control: from one spot, it does the same job on 5 or 500 machines at once. There's nothing to install on the machines — it just uses SSH to reach them.</p>
+      <div class="define"><span class="lbl4">The three pieces</span><b>Inventory</b> = a phone book listing the machines. <b>Playbook</b> = a recipe of steps written in a simple text file. <b>Run</b> = you tell Ansible to follow the recipe on the machines in the phone book.</div>
+
+      <h3 class="phase">Set it up</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Install Ansible on your control machine</div>
+          <p>You install it in <b>one</b> place — the machine you'll drive from, not the targets:</p>
+          <div class="cmd"><button class="copy">Copy</button>sudo dnf install -y ansible-core</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Make the phone book (inventory)</div>
+          <p>Make a file called <code class="k">inventory.ini</code>. The names in brackets are groups; list the machines under them:</p>
+          <div class="cmd"><button class="copy">Copy</button>[web]
+<span class="ph">web01.example.com</span>
+<span class="ph">web02.example.com</span></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Check you can reach them</div>
+          <div class="cmd"><button class="copy">Copy</button>ansible -i inventory.ini all -m ping</div>
+          <div class="out"><span class="lbl2">Green = good (one line per machine)</span>web01.example.com | SUCCESS =&gt; { "ping": "pong" }</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Write &amp; run a "patch everything" recipe</h3>
+      <div class="run">
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Write the recipe (playbook)</div>
+          <p>Make a file <code class="k">patch-reboot.yml</code>. Spacing matters — use 2 spaces, never Tabs:</p>
+          <div class="cmd"><button class="copy">Copy</button>---
+- name: Update and reboot if needed
+  hosts: all                 <span class="c"># which machines (from the phone book)</span>
+  become: yes                <span class="c"># use boss powers (sudo)</span>
+  tasks:                     <span class="c"># the list of steps</span>
+    - name: Update everything
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+
+    - name: Reboot only if it's needed
+      ansible.builtin.reboot:
+      when: ansible_reboot_pending | default(false)</div>
+          <div class="define"><span class="lbl4">Reading the recipe</span><b>hosts</b> = which machines. <b>become: yes</b> = do it as the boss. <b>tasks</b> = the steps to run, top to bottom. Each step has a friendly name and one action.</div>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Try it safely, then really run it</div>
+          <div class="cmd"><button class="copy">Copy</button>ansible-playbook -i inventory.ini patch-reboot.yml --check   <span class="c"># PRACTICE run — changes nothing</span>
+ansible-playbook -i inventory.ini patch-reboot.yml           <span class="c"># the real run</span>
+ansible-playbook -i inventory.ini patch-reboot.yml --limit <span class="ph">web01.example.com</span>   <span class="c"># just ONE machine</span></div>
+          <div class="did"><span class="lbl5">You did it when…</span>the practice run looks right, then the real run updates every machine in your phone book. One command, all of them.</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Quick people-jobs across all machines</h3>
+      <div class="run">
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Reset a password, or unlock an account, everywhere</div>
+          <div class="cmd"><button class="copy">Copy</button><span class="c"># reset a password on every machine (it gets scrambled/hashed automatically)</span>
+ansible -i inventory.ini all -b -m ansible.builtin.user \
+  -a "name=<span class="ph">jdoe</span> password={{ '<span class="ph">NewPass!</span>' | password_hash('sha512') }}"
+
+<span class="c"># unlock a locked account everywhere</span>
+ansible -i inventory.ini all -b -m ansible.builtin.user -a "name=<span class="ph">jdoe</span> password_lock=no"</div>
+          <div class="define"><span class="lbl4">This is the answer to "40 machines"</span>Remember the scanner account that must exist on every box? You push it to all 40 with one Ansible run instead of doing it 40 times by hand. Same idea for any repeated task.</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ Handy safety habits</p><p><code class="k">--check</code> = practice run · <code class="k">--limit</code> = target one machine · keep any password/secret in <code class="k">ansible-vault</code>, never plain text.</p></div>
+    </section>
+
+    <!-- SOP 13 -->
+    <section class="panel" id="p13">
+      <p class="eyebrow">Runbook 13 · plain-language</p>
+      <h2 class="title">Build an IDM (Login) Server</h2>
+      <p class="lead"><b>IDM</b> is like a central security desk for the whole building. Instead of every machine keeping its own list of who's allowed, they all ask <em>one</em> desk: "is this person allowed, and what can they do?" This builds that desk.</p>
+      <div class="define"><span class="lbl4">The words</span><b>IDM</b> = the central login server (also called FreeIPA). <b>Directory</b> = its list of all the people. <b>Kerberos</b> = its ticket system (when you log in, it hands you a "ticket" that proves who you are). <b>Realm</b> = the name of your login area, usually your domain in capital letters (like <code class="k">EXAMPLE.COM</code>).</div>
+
+      <h3 class="phase">Build the desk</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Prep the machine (name, address, clock)</div>
+          <p>IDM is fussy: it needs a proper full name, a fixed IP, and a correct clock. Become the boss, then:</p>
+          <div class="cmd"><button class="copy">Copy</button>hostnamectl set-hostname <span class="ph">idm.example.com</span>   <span class="c"># a real full name</span>
+echo "<span class="ph">10.1.1.10</span> <span class="ph">idm.example.com</span> idm" >> /etc/hosts   <span class="c"># help it find itself</span></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Install the software</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf install -y ipa-server ipa-server-dns freeipa-server-trust-ad</div>
+          <p>(The last two add DNS and the ability to trust Windows/AD later.)</p>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Run the installer</div>
+          <div class="cmd"><button class="copy">Copy</button>ipa-server-install --setup-dns</div>
+          <p>It asks a few questions: your <b>realm</b> (like <code class="k">EXAMPLE.COM</code>), your domain, and two passwords (a master "Directory Manager" one and the <b>admin</b> one). Then it builds everything — the people list, the ticket system, and the certificate authority — by itself.</p>
+          <div class="did"><span class="lbl5">You did it when…</span>it says "Setup complete" and gives you a web address like <code class="k">https://idm.example.com</code>.</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Open the right doors, lock the rest</h3>
+      <div class="run">
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Open the doors (ports) IDM needs</div>
+          <div class="cmd"><button class="copy">Copy</button>firewall-cmd --permanent --add-service={freeipa-4,dns,ntp}
+firewall-cmd --reload</div>
+          <div class="define"><span class="lbl4">What those doors are for</span><b>web (80/443)</b> = the web page + handing out ID cards. <b>directory (389/636)</b> = the list of people. <b>tickets (88/464)</b> = the Kerberos login-ticket system. <b>DNS (53)</b> = the phone book (if IDM runs it). <b>time (123)</b> = the clock. Those are the only doors it needs — everything else stays shut.</div>
+          <div class="call red"><p class="h">✕ Lock the rest</p><p>Don't leave other doors open. If <code class="k">ss -tulpn</code> shows something listening that isn't on that list, close it. Keep SSH (door 22) for admins only.</p></div>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Check the desk is open and working</div>
+          <div class="cmd"><button class="copy">Copy</button>ipactl status     <span class="c"># everything should say RUNNING</span>
+kinit admin       <span class="c"># get a login ticket as admin</span></div>
+        </div>
+      </div>
+
+      <h3 class="phase">Let Windows (AD) users be recognized</h3>
+      <div class="run">
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Turn on the "trust" feature and open its doors</div>
+          <div class="define"><span class="lbl4">Trust</span>A <b>trust</b> is a handshake between your Linux login desk and the Windows (Active Directory) login desk, so they agree to recognize each other's people. You need it before Windows users can use Linux machines.</div>
+          <div class="cmd"><button class="copy">Copy</button>ipa-adtrust-install --add-sids
+firewall-cmd --permanent --add-service=freeipa-trust
+firewall-cmd --reload</div>
+        </div>
+        <div class="rstep" data-n="7">
+          <div class="rtitle">Shake hands with the Windows domain</div>
+          <p>DNS must work both ways and clocks must match between the two first. Then:</p>
+          <div class="cmd"><button class="copy">Copy</button>ipa trust-add --type=ad <span class="ph">ad.example.com</span> --admin <span class="ph">Administrator</span> --password</div>
+          <div class="did"><span class="lbl5">You did it when…</span>it says the trust was added. The two desks now recognize each other. Making Windows users actually able to log in is Runbook 15.</div>
+        </div>
+      </div>
+      <div class="site"><span class="lbl3">Ask your team</span>Your real <b>realm/domain names</b> and the <b>Windows domain name + admin</b> are site-specific. Get them before you run the trust step.</div>
+    </section>
+
+    <!-- SOP 14 -->
+    <section class="panel" id="p14">
+      <p class="eyebrow">Runbook 14 · plain-language</p>
+      <h2 class="title">Join a Machine to IDM</h2>
+      <p class="lead">Once the central desk exists (Runbook 13), you <b>enroll</b> each machine so it uses the desk instead of its own local list. After that, people log in with their central account, and their SSH key comes from the desk automatically — no more copying keys to each box.</p>
+
+      <h3 class="phase">Join it</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Check the basics on the machine</div>
+          <p>Become the boss. The machine needs a real name, must be able to find the IDM server, and its clock must match:</p>
+          <div class="cmd"><button class="copy">Copy</button>hostnamectl set-hostname <span class="ph">web01.example.com</span>
+dig <span class="ph">idm.example.com</span> +short       <span class="c"># should return the IDM server's IP</span>
+timedatectl                        <span class="c"># clock in sync?</span></div>
+          <div class="define"><span class="lbl4">Why the clock matters</span>The ticket system (Kerberos) refuses to work if the clocks are off by more than a few minutes. A wrong clock is the #1 reason joining fails.</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Install the client and join</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf install -y ipa-client
+ipa-client-install --mkhomedir \
+  --server=<span class="ph">idm.example.com</span> --domain=<span class="ph">example.com</span> \
+  --principal admin --password</div>
+          <div class="define"><span class="lbl4">The pieces</span><b>--mkhomedir</b> = automatically make a home folder for each person the first time they log in. <b>--principal admin</b> = the central account allowed to add machines (it'll ask for the password).</div>
+          <div class="did"><span class="lbl5">You did it when…</span>it finishes with "Client configuration complete." The machine now trusts the central desk.</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Check it, and set up central keys</h3>
+      <div class="run">
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Prove the machine sees central users</div>
+          <div class="cmd"><button class="copy">Copy</button>id <span class="ph">ian</span>       <span class="c"># works even though 'ian' isn't a local account</span>
+kinit <span class="ph">ian</span>    <span class="c"># get a login ticket</span>
+klist         <span class="c"># shows the ticket</span></div>
+          <div class="out"><span class="lbl2">You'll see</span>Default principal: ian@EXAMPLE.COM   ← the ticket system works ✓</div>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Store a user's SSH key ONCE, for every machine</div>
+          <p>This is the big payoff. Put a person's <b>public</b> key into the central desk one time, and every joined machine hands it out automatically — no per-machine key copying (the thing you did by hand in Runbook 04):</p>
+          <div class="cmd"><button class="copy">Copy</button>ipa user-mod <span class="ph">ian</span> --sshpubkey="<span class="ph">ssh-ed25519 AAAA...ian@laptop</span>"</div>
+          <div class="did"><span class="lbl5">Now…</span><code class="k">ssh <span class="ph">ian</span>@<span class="ph">any-joined-machine</span></code> works with their key, everywhere, with nothing to set up on each box.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOP 15 -->
+    <section class="panel" id="p15">
+      <p class="eyebrow">Runbook 15 · plain-language</p>
+      <h2 class="title">Let Windows / AD Users Log In</h2>
+      <p class="lead">The two security desks already shook hands (the trust, Runbook 13). Now you let a <b>group</b> of Windows people use their existing Windows login to get into your Linux machines — no separate Linux account needed.</p>
+      <div class="define"><span class="lbl4">The trick</span>You don't add Windows users one at a time. You point at a Windows <b>group</b>, wrap it so IDM can use it, then make a rule that lets that group in. Add or remove people in Windows, and their Linux access follows automatically.</div>
+
+      <h3 class="phase">Check the trust works</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">See if a Windows user shows up</div>
+          <div class="cmd"><button class="copy">Copy</button>id <span class="ph">aduser</span>@<span class="ph">ad.example.com</span></div>
+          <div class="out"><span class="lbl2">Good means</span>uid=... (aduser@ad.example.com) groups=...   ← the Windows user is recognized ✓</div>
+          <p>Windows users are typed as <code class="k">name@ad.example.com</code>. If this fails, the DNS or clock between the two desks needs fixing first.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Let a Windows group in</h3>
+      <div class="run">
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Pull in the Windows group</div>
+          <p>Make an IDM group that points at the Windows group, then wrap it in a normal group IDM can use in rules:</p>
+          <div class="cmd"><button class="copy">Copy</button><span class="c"># 1) a group that points at the Windows group</span>
+ipa group-add --external <span class="ph">ad_admins_ext</span>
+ipa group-add-member <span class="ph">ad_admins_ext</span> --external "<span class="ph">AD\\Linux Admins</span>"
+
+<span class="c"># 2) a normal group that contains it</span>
+ipa group-add <span class="ph">ad_admins</span>
+ipa group-add-member <span class="ph">ad_admins</span> --groups=<span class="ph">ad_admins_ext</span></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Make the rule that lets them log in (and use sudo)</div>
+          <div class="define"><span class="lbl4">HBAC rule</span>An <b>HBAC rule</b> is simply "who is allowed to log into which machines." You make one that says: this group may log in everywhere via SSH.</div>
+          <div class="cmd"><button class="copy">Copy</button><span class="c"># allow this group to log in on all machines</span>
+ipa hbacrule-add <span class="ph">allow_ad_admins</span>
+ipa hbacrule-add-user <span class="ph">allow_ad_admins</span> --groups=<span class="ph">ad_admins</span>
+ipa hbacrule-add-host <span class="ph">allow_ad_admins</span> --hostcat=all
+ipa hbacrule-add-service <span class="ph">allow_ad_admins</span> --hbacsvcs=sshd
+
+<span class="c"># and let them use boss powers (sudo)</span>
+ipa sudorule-add <span class="ph">ad_admins_sudo</span>
+ipa sudorule-add-user <span class="ph">ad_admins_sudo</span> --groups=<span class="ph">ad_admins</span>
+ipa sudorule-add-host <span class="ph">ad_admins_sudo</span> --hostcat=all
+ipa sudorule-mod <span class="ph">ad_admins_sudo</span> --cmdcat=all</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Test a real login</h3>
+      <div class="run">
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Log in as the Windows user from a machine</div>
+          <div class="cmd"><button class="copy">Copy</button>ssh <span class="ph">aduser</span>@<span class="ph">ad.example.com</span>@<span class="ph">web01.example.com</span>
+<span class="c"># once you're in:</span>
+id            <span class="c"># shows the ad_admins group</span>
+sudo -l       <span class="c"># shows the boss powers you granted</span></div>
+          <div class="did"><span class="lbl5">You did it when…</span>the Windows user logs into a Linux machine with their Windows password, gets a home folder made automatically, and has the access you granted.</div>
+          <div class="call amber"><p class="h">◆ Tired of the long name?</p><p>Your team can set an option in <code class="k">sssd.conf</code> so people log in as just <code class="k">aduser</code> instead of <code class="k">aduser@ad.example.com</code>.</p></div>
+        </div>
+      </div>
+      <div class="did"><span class="lbl5">The payoff</span>Windows staff use their existing badge to get into Linux — no second account to manage. You control access by adding/removing them from the Windows group.</div>
+    </section>
+
+    <!-- SOP 10 -->
+    <section class="panel" id="p10">
+      <p class="eyebrow">Runbook 10 · plain-language</p>
+      <h2 class="title">Make a RHEL 10 Template (Next Year's Cookie Cutter)</h2>
+      <p class="lead">When a new version comes out, you make a fresh master copy for it. There are two ways — and for a clean master, building fresh is best.</p>
+
+      <h3 class="phase">The best way: build a fresh 10 master</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Just do Runbook 02 again, with the RHEL 10 disc</div>
+          <p>Download the <b>RHEL 10</b> setup disc (ISO) instead of 9, then follow the whole "make a template" runbook: build it, set it up, secure it, wipe fingerprints, freeze it. Name it <span style="color:var(--amber);font-style:italic">tmpl-rhel10-base</span>.</p>
+          <div class="call amber"><p class="h">◆ Why fresh is better for a master</p><p>A brand-new build gives you a clean, tidy version-10 machine with no leftovers from the old version. For a cookie cutter that every future server copies, clean matters.</p></div>
+        </div>
+      </div>
+
+      <h3 class="phase">The other way: renovate a copy of the 9 master</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Copy the 9 template into a working machine</div>
+          <p>Right-click <span style="color:var(--amber);font-style:italic">tmpl-rhel9-base</span> → <b>Convert to Virtual Machine</b> (never renovate the master itself), turn it on, and snapshot it.</p>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Do the big upgrade to 10 (Runbook 06)</div>
+          <p>Make sure it can reach version-10 software, then run Leapp exactly like Runbook 06 — but aiming at 10.</p>
+          <div class="call amber"><p class="h">◆ Remember the rules (Runbook 07)</p><p>You go 9 → 10 only (never skip from 8 straight to 10), and the machine must be fully current on 9 first.</p></div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Re-secure, re-clean, re-freeze</div>
+          <p>On the now-version-10 machine: run your hardening again (Runbook 08), wipe its fingerprints again (Runbook 02), power off, and <b>Convert to Template</b> as <span style="color:var(--amber);font-style:italic">tmpl-rhel10-base</span>.</p>
+          <div class="did"><span class="lbl5">You did it when…</span>you have a <b>tmpl-rhel10-base</b> template. New version-10 servers are now made from it.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOP 11 -->
+    <section class="panel" id="p11">
+      <p class="eyebrow">Runbook 11 · plain-language</p>
+      <h2 class="title">Move to RHEL 10 &amp; Retire RHEL 9</h2>
+      <p class="lead">This is like moving into a new house and then cleaning out the old one. You set up the new version-10 machine, move the work over, switch to it, and only then shut down and remove the old version-9 machine.</p>
+
+      <h3 class="phase">Move in</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Make the new version-10 machine</div>
+          <p>Deploy a fresh server from the version-10 template (Runbook 03): correct network, its own name/IP, library card, joined to the login desk, hardened.</p>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Move the app and its data over</div>
+          <p>Install the app on the new machine, then copy the data and settings from the old one. A handy tool to copy a whole folder across:</p>
+          <div class="cmd"><button class="copy">Copy</button>rsync -av <span class="ph">ian</span>@<span class="ph">web01-old</span>:/path/to/data/ /path/to/data/</div>
+          <p>Keep the old machine running for now, so you can fall back if needed.</p>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Test the new machine before you switch</div>
+          <p>Do the first-boot checks (Runbook 03), make sure the app works, and scan it (Runbook 08). Don't switch traffic until it passes.</p>
+        </div>
+      </div>
+
+      <h3 class="phase">Switch over &amp; clean out the old one</h3>
+      <div class="run">
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Point everyone at the new machine</div>
+          <p>Move the work: update DNS to the new machine, or stop the app on the old one and give its IP address to the new one. Watch it in real use for a bit.</p>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Retire the old machine cleanly</div>
+          <div class="cmd"><button class="copy">Copy</button>subscription-manager unregister      <span class="c"># give back its library card</span>
+ipa host-del <span class="ph">web01-rhel9.example.com</span>   <span class="c"># remove it from the login desk</span>
+poweroff                             <span class="c"># turn it off (don't delete yet)</span></div>
+          <div class="call amber"><p class="h">◆ Wait before you delete</p><p>Leave the old machine powered off (and keep a Veeam backup) for a while — a "cooling off" period — in case you missed something. Only pick <b>Delete from Disk</b> after you're sure, and log the retirement.</p></div>
+          <div class="did"><span class="lbl5">You did it when…</span>the new version-10 machine is doing the job in production, and the old version-9 one is powered off, unregistered, and removed from the login desk.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOP 16 -->
+    <section class="panel" id="p16">
+      <p class="eyebrow">Runbook 16 · plain-language</p>
+      <h2 class="title">Kubernetes: Run an App in Pods</h2>
+      <p class="lead"><b>Kubernetes</b> is like a team manager for apps. You tell it "keep 2 copies of this app running and let people reach it," and it makes that happen and keeps it healthy. You build a manager machine, add worker machines, then hand it an app.</p>
+      <div class="define"><span class="lbl4">The words, in plain terms</span><b>Container</b> = a lunchbox with one app already packed inside, ready to run anywhere. <b>Pod</b> = one running copy of your app. <b>Node</b> = a machine in the team. <b>Control plane</b> = the manager/brain that decides what runs where. <b>Worker</b> = a machine that actually runs the app copies. <b>Deployment</b> = your instruction "keep N copies running." <b>Service</b> = a stable doorway so people can reach the app even as copies come and go.</div>
+      <div class="site"><span class="lbl3">Ask your team (air-gapped)</span>Since you can't reach the internet, the software (kubeadm, containerd) comes from <b>your Satellite/mirror</b> and the app "lunchboxes" (images) come from <b>your internal registry</b>. Point the commands at those.</div>
+
+      <h3 class="phase">Architecture Q&amp;A — the important questions, answered simply</h3>
+      <p class="plain">These are the classic "explain Kubernetes" questions. Here's each one in plain words, using the same team-manager picture. (First, the quick cast: <b>control plane</b> = the brain/manager; <b>worker nodes</b> = the players that run apps; <b>container</b> = a lunchbox with one app inside; <b>pod</b> = one running app copy.)</p>
+
+      <div class="qa"><p class="q">1 · Explain the Kubernetes architecture (the big picture)</p>
+      <p class="a">Kubernetes has two kinds of machines. The <b>control plane</b> is the brain that makes all the decisions, and the <b>worker nodes</b> are the muscle that actually run your apps. The brain has a few helpers (API server, etcd, scheduler, controller manager) and each worker has a few helpers (kubelet, kube-proxy, container runtime). Together they keep your apps running exactly the way you asked.</p></div>
+
+      <div class="qa"><p class="q">2 · What is the role of the Control Plane?</p>
+      <p class="a">The control plane is the <b>manager/brain</b>. It takes your orders ("keep 2 copies of this app running"), decides which worker should run each copy, and constantly checks that what's happening matches what you asked. If a copy dies, it arranges a new one. It usually doesn't run your apps itself — it directs the workers.</p></div>
+
+      <div class="qa"><p class="q">3 · What are Worker Nodes and their components?</p>
+      <p class="a">Worker nodes are the machines that actually <b>run your apps</b> (the players). Each has three helpers: the <b>kubelet</b> (the team captain that talks to the brain and starts/stops apps on that machine), the <b>container runtime</b> (the hands that open and run the app lunchboxes), and <b>kube-proxy</b> (the traffic director that gets network messages to the right app).</p></div>
+
+      <div class="qa"><p class="q">4 · How does the API Server work?</p>
+      <p class="a">The API server is the <b>front desk</b> of the brain. Everything talks through it — you, the other brain helpers, and the workers. When you say "run this app," the request goes to the API server; it checks you're allowed, writes it down in etcd, and passes it along. Nothing happens in the cluster without going through the front desk.</p></div>
+
+      <div class="qa"><p class="q">5 · What is etcd, and why is it important?</p>
+      <p class="a">etcd is the cluster's <b>notebook</b> — it writes down everything: what should be running, what is running, and all the settings. It matters because it's the single source of truth. If etcd is lost, the cluster forgets everything about itself — which is exactly why you back it up carefully.</p></div>
+
+      <div class="qa"><p class="q">6 · How does the Scheduler work?</p>
+      <p class="a">The scheduler is the <b>seating host</b> at a restaurant. When a new app copy needs to run, it looks at all the workers, sees which have enough room (CPU/memory) and fit the rules, and picks the best worker to place it on. It decides <em>where</em> a copy runs — not how.</p></div>
+
+      <div class="qa"><p class="q">7 · What is the role of the Controller Manager?</p>
+      <p class="a">The controller manager is the <b>safety inspector that never sleeps</b>. It constantly compares "what you asked for" with "what's really happening." Asked for 2 copies but only 1 is up? It starts another. A worker went down? It notices and reacts. It's the watchdog that keeps reality matching your wishes.</p></div>
+
+      <div class="qa"><p class="q">8 · How does Kube-proxy work?</p>
+      <p class="a">Kube-proxy is the <b>traffic director</b> on each worker. App copies come and go and change addresses, so kube-proxy keeps a live map and makes sure that when someone contacts the app's stable "doorway" (the Service), the message is forwarded to a healthy copy. It handles the network plumbing so you never chase moving addresses.</p></div>
+
+      <div class="qa"><p class="q">9 · What is the role of the Container Runtime?</p>
+      <p class="a">The container runtime is the <b>hands</b> that actually open and run the lunchboxes (containers). Kubernetes decides what should run; the runtime (like <b>containerd</b>) does the real work — downloading the app image and starting it on the worker. No runtime, and nothing actually runs.</p></div>
+
+      <div class="qa"><p class="q">10 · How do all the components work together?</p>
+      <p class="a">Here's the whole story in one example. You tell the <b>API server</b> "run 2 copies of my app." It saves that in <b>etcd</b>. The <b>scheduler</b> picks which workers will run them. On each chosen worker, the <b>kubelet</b> tells the <b>container runtime</b> to start the app, and <b>kube-proxy</b> wires up the network so people can reach it. The <b>controller manager</b> keeps watching — if a copy dies, it notices and the cycle repeats to bring it back. In short: <b>the brain decides, the workers do, and it heals itself.</b></p></div>
+
+      <h3 class="phase">Get all 3 machines ready (the manager + 2 workers)</h3>
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Turn off swap and set a few network switches</div>
+          <p>Run this on <b>every</b> machine (become the boss first). Kubernetes refuses to run with "swap" on, and these settings let app traffic flow:</p>
+          <div class="cmd"><button class="copy">Copy</button>swapoff -a
+sed -i '/ swap / s/^/#/' /etc/fstab
+modprobe overlay &amp;&amp; modprobe br_netfilter
+echo -e "overlay\nbr_netfilter" > /etc/modules-load.d/k8s.conf
+echo -e "net.bridge.bridge-nf-call-iptables=1\nnet.ipv4.ip_forward=1" > /etc/sysctl.d/k8s.conf
+sysctl --system</div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Install the "engine" that runs containers</div>
+          <div class="define"><span class="lbl4">Container engine</span>The <b>container engine</b> (containerd) is the part that actually opens and runs the lunchboxes. Kubernetes is the manager; containerd is the worker's hands.</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf install -y containerd
+containerd config default > /etc/containerd/config.toml
+sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+systemctl enable --now containerd</div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Install the Kubernetes tools and open the doors</div>
+          <div class="cmd"><button class="copy">Copy</button>dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+systemctl enable --now kubelet
+
+<span class="c"># on the MANAGER machine:</span>
+firewall-cmd --permanent --add-port={6443,2379-2380,10250,10257,10259}/tcp
+<span class="c"># on each WORKER machine:</span>
+firewall-cmd --permanent --add-port={10250,10256,30000-32767}/tcp
+firewall-cmd --reload</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Build the manager (control plane) FIRST</h3>
+      <div class="run">
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Start the cluster on the manager machine</div>
+          <div class="cmd"><button class="copy">Copy</button>kubeadm init \
+  --pod-network-cidr=10.244.0.0/16 \
+  --apiserver-advertise-address=<span class="ph">10.1.1.60</span></div>
+          <p>When it finishes, it prints a <b>kubeadm join</b> line — <b>copy that and save it</b>. The workers need it.</p>
+        </div>
+        <div class="rstep" data-n="5">
+          <div class="rtitle">Set up the "remote control" (kubectl)</div>
+          <div class="define"><span class="lbl4">kubectl</span><b>kubectl</b> is how you talk to the manager — every "get" or "make" command you type goes through it.</div>
+          <div class="cmd"><button class="copy">Copy</button>mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config</div>
+        </div>
+        <div class="rstep" data-n="6">
+          <div class="rtitle">Turn on the pod network</div>
+          <p>Pods need a way to talk to each other — you add a small network add-on:</p>
+          <div class="cmd"><button class="copy">Copy</button>kubectl apply -f <span class="ph">kube-flannel.yml</span>   <span class="c"># air-gapped: a local copy + mirrored images</span></div>
+          <div class="did"><span class="lbl5">Check</span><code class="k">kubectl get nodes</code> — after a minute the manager shows <b>Ready</b>.</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Add the worker machines</h3>
+      <div class="run">
+        <div class="rstep" data-n="7">
+          <div class="rtitle">Run the join line on each worker</div>
+          <p>On each worker (as the boss), paste the line the manager printed in step 4:</p>
+          <div class="cmd"><button class="copy">Copy</button>kubeadm join <span class="ph">10.1.1.60</span>:6443 --token <span class="ph">abcdef...</span> \
+  --discovery-token-ca-cert-hash sha256:<span class="ph">1a2b3c...</span></div>
+          <p>Lost the line? On the manager run <code class="k">kubeadm token create --print-join-command</code> to make a new one.</p>
+        </div>
+        <div class="rstep" data-n="8">
+          <div class="rtitle">Check the whole team is ready</div>
+          <div class="cmd"><button class="copy">Copy</button>kubectl get nodes</div>
+          <div class="out"><span class="lbl2">All three say Ready = the team is up</span>k8s-cp-01       Ready   control-plane
+k8s-worker-01   Ready
+k8s-worker-02   Ready</div>
+        </div>
+      </div>
+
+      <h3 class="phase">Hand it an app people can reach</h3>
+      <div class="run">
+        <div class="rstep" data-n="9">
+          <div class="rtitle">Tell it to run the app, with a share of CPU/memory</div>
+          <div class="define"><span class="lbl4">requests &amp; limits</span><b>requests</b> = the CPU/memory the app is guaranteed to get. <b>limits</b> = the most it's allowed to use. This is how you "give it resources" and stop it hogging everything.</div>
+          <div class="cmd"><button class="copy">Copy</button>cat > nginx-app.yaml <<'YAML'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 2                     # keep 2 copies running
+  selector:
+    matchLabels: { app: nginx }
+  template:
+    metadata:
+      labels: { app: nginx }
+    spec:
+      containers:
+        - name: nginx
+          image: <span class="ph">registry.example.com/nginx:1.27</span>
+          ports:
+            - containerPort: 80
+          resources:
+            requests: { cpu: "250m", memory: "128Mi" }
+            limits:   { cpu: "500m", memory: "256Mi" }
+YAML
+kubectl apply -f nginx-app.yaml</div>
+        </div>
+        <div class="rstep" data-n="10">
+          <div class="rtitle">Open a doorway so people can reach it</div>
+          <div class="define"><span class="lbl4">NodePort</span>App copies come and go, so you don't point people at a copy — you make a <b>Service</b>. A <b>NodePort</b> opens the same port number on every machine, so users reach the app at <code class="k">machine-address:that-port</code>.</div>
+          <div class="cmd"><button class="copy">Copy</button>kubectl expose deployment nginx --type=NodePort --port=80
+kubectl get svc nginx</div>
+          <div class="out"><span class="lbl2">Find the door number (a big 3xxxx number)</span>nginx   NodePort   10.96.12.34   80:<b>31782</b>/TCP   ← users go to  machine-IP:31782</div>
+        </div>
+        <div class="rstep" data-n="11">
+          <div class="rtitle">Check people can reach the app</div>
+          <div class="cmd"><button class="copy">Copy</button>kubectl get pods       <span class="c"># both copies should say Running</span>
+curl http://<span class="ph">10.1.1.61</span>:<span class="ph">31782</span>   <span class="c"># any machine's address + the door number</span></div>
+          <div class="did"><span class="lbl5">You did it when…</span>you see the nginx welcome page. You have a running cluster and an app people can reach. Want more copies? <code class="k">kubectl scale deployment nginx --replicas=4</code>.</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ If an app copy is stuck on "ImagePullBackOff"</p><p>That means it can't find the app "lunchbox" (image). In an air-gapped setup, the image must be in <b>your internal registry</b> and the address in the file must point there. That's the fix — it's not the cluster's fault.</p></div>
+    </section>
+
+    <!-- BONUS: FILESYSTEMS -->
+    <section class="panel" id="pfs">
+      <p class="eyebrow">＋ Bonus · plain-language</p>
+      <h2 class="title">Add a New Disk &amp; Make It Stick (Filesystems / fstab)</h2>
+      <p class="lead">A brand-new blank disk is like an <b>empty room with no door</b>. To use it you do three things: put a floor in it (<b>format</b>), add a door from a hallway (<b>mount</b> it to a folder), and write it on the building map so the door opens by itself every day (<b>fstab</b>).</p>
+      <div class="define"><span class="lbl4">The words</span><b>Format</b> = put a filesystem on a blank disk so it can hold files (like laying a floor). <b>Mount</b> = make the disk show up as a folder you can use. <b>/etc/fstab</b> = the machine's "building map" that lists which disks mount to which folders at startup.</div>
+
+      <div class="run">
+        <div class="rstep" data-n="1">
+          <div class="rtitle">Find the new disk and put a "floor" in it</div>
+          <p>Become the boss. List the disks to find the new empty one (it has no mount folder yet), then format it:</p>
+          <div class="cmd"><button class="copy">Copy</button>lsblk                    <span class="c"># find the new disk, e.g. sdb</span>
+mkfs.xfs /dev/<span class="ph">sdb1</span>       <span class="c"># put a filesystem on it (XFS is the RHEL default)</span></div>
+          <div class="call red"><p class="h">✕ Formatting erases everything</p><p>Only format a truly <b>new, empty</b> disk — it wipes anything on it. Check the name with <code class="k">lsblk</code> twice before you format.</p></div>
+        </div>
+        <div class="rstep" data-n="2">
+          <div class="rtitle">Make a folder and connect (mount) the disk to it</div>
+          <div class="cmd"><button class="copy">Copy</button>mkdir -p /<span class="ph">data</span>            <span class="c"># an empty folder to use as the "door"</span>
+mount /dev/<span class="ph">sdb1</span> /<span class="ph">data</span>     <span class="c"># the disk now shows up as /data</span>
+df -h /<span class="ph">data</span>              <span class="c"># confirm it's there and shows the space</span></div>
+          <div class="define"><span class="lbl4">Heads up: this is temporary</span>A plain <code class="k">mount</code> lasts only until the next reboot. Step 3 makes it come back automatically.</div>
+        </div>
+        <div class="rstep" data-n="3">
+          <div class="rtitle">Write it on the "building map" so it comes back every reboot</div>
+          <p>First get the disk's <b>UUID</b> — its permanent name tag (better than <code class="k">/dev/sdb1</code>, which can change):</p>
+          <div class="cmd"><button class="copy">Copy</button>blkid /dev/<span class="ph">sdb1</span>           <span class="c"># copy the UUID="..." part</span></div>
+          <p>Then add ONE line to <code class="k">/etc/fstab</code>. Each line has six little parts:</p>
+          <div class="cmd"><button class="copy">Copy</button>UUID=<span class="ph">a1b2c3d4-....</span>  /<span class="ph">data</span>  xfs  defaults  0 0</div>
+          <div class="define"><span class="lbl4">The six parts, left to right</span>① <b>which disk</b> (the UUID) · ② <b>which folder</b> (/data) · ③ <b>type</b> (xfs) · ④ <b>options</b> (<code class="k">defaults</code>; add <code class="k">nofail</code> for a non-critical disk) · ⑤ backup flag (leave <code class="k">0</code>) · ⑥ boot-check order (<code class="k">0</code> for a data disk).</div>
+        </div>
+        <div class="rstep" data-n="4">
+          <div class="rtitle">Test it BEFORE you reboot (very important)</div>
+          <div class="cmd"><button class="copy">Copy</button>mount -a          <span class="c"># tries the whole map right now. NO error = your line is good.</span>
+findmnt /<span class="ph">data</span>     <span class="c"># confirms it's mounted</span></div>
+          <div class="call red"><p class="h">✕ Why this test matters so much</p><p>A wrong line in <code class="k">/etc/fstab</code> can stop the machine from booting (it gets stuck in "emergency mode"). Running <code class="k">mount -a</code> checks your line <b>while the machine is still up</b>, so you catch a mistake before a reboot — not after, when it's much harder to fix.</p></div>
+          <div class="did"><span class="lbl5">You did it when…</span><code class="k">mount -a</code> gives no error and <code class="k">df -h</code> shows your new space on <code class="k">/data</code>. It'll now come back on its own after every reboot.</div>
+        </div>
+      </div>
+      <div class="call amber"><p class="h">◆ If a bad fstab already froze a boot</p><p>At the emergency screen: log in, type <code class="k">mount -o remount,rw /</code> (makes the system editable), fix or delete the bad line in <code class="k">/etc/fstab</code>, then <code class="k">reboot</code>. That's the way back.</p></div>
+    </section>
+
+    <footer class="foot">
+      <p style="font-weight:700;color:var(--ink);margin:0 0 4px">SOP Runbooks — Plain-Language Edition · v1.0 (2026-09-06) · Basics + 16 of 16 ✓</p>
+      <p style="margin:0 0 6px">The beginner companion to the main SOP binder — every one of the 16 runbooks explained as if to someone brand new, with the shared basics up front. Read the <b>Start Here</b> tab first. Words in <span style="color:var(--amber);font-style:italic;font-family:var(--mono)">amber italic</span> are examples to swap for your real values; <span style="color:var(--amber);font-weight:700">Ask your team</span> boxes are for your site's specifics. Same steps as the concise binder — just spelled all the way out.</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+  const nav=document.getElementById('nav');
+  const panels=[...document.querySelectorAll('.panel')];
+  nav.addEventListener('click',e=>{
+    const b=e.target.closest('.navbtn'); if(!b||b.classList.contains('soon')) return;
+    const id=b.dataset.p; if(!id) return;
+    panels.forEach(p=>p.classList.toggle('active',p.id===id));
+    [...nav.querySelectorAll('.navbtn')].forEach(x=>x.removeAttribute('aria-current'));
+    b.setAttribute('aria-current','true'); window.scrollTo(0,0);
+  });
+  document.addEventListener('click',e=>{
+    const c=e.target.closest('.copy'); if(!c) return;
+    const box=c.parentNode.cloneNode(true); box.querySelector('.copy').remove();
+    const txt=box.textContent;
+    const ok=()=>{c.textContent='Copied ✓';c.classList.add('done');setTimeout(()=>{c.textContent='Copy';c.classList.remove('done');},1400);};
+    if(navigator.clipboard){navigator.clipboard.writeText(txt).then(ok).catch(()=>{});}
+    else{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand('copy');ok();}catch(_){}t.remove();}
+  });
+</script>
+</body>
+</html>
